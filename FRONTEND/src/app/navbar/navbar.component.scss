@@ -1,0 +1,23 @@
+.nav{
+    display: flex;;
+    background-color: #cbeaee;
+}
+img{
+    width: 30px;
+    height: 30px;
+    margin-left: 10px;
+}
+
+.logo{
+    width: 270px;
+    height: 100px;
+    margin-left: 10px;
+}   
+
+.nav-links{
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-left: auto;
+    margin-right: 10px;
+}
