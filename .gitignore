@@ -1,0 +1,51 @@
+# 1. SECRETS & CONFIGURATIONS (LLM & POSTGRES)
+.env
+.env.*
+secrets.json
+credentials.json
+
+# 2. PYTHON & FASTAPI (Backend)
+# Compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+Lib/
+Include/
+Scripts/
+
+# Backend logs
+*.log
+
+# 3. ANGULAR & NODE (Frontend)
+# NPM packages
+node_modules/
+
+# Production build and cache
+dist/
+.angular/
+coverage/
+/out-tsc
+
+# Node error logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 4. LOCAL DATABASES
+*.sqlite3
+db.sqlite3
+*.sql
+
+# 5. VSCODE & OPERATING SYSTEM
+.vscode/*
+.DS_Store
+Thumbs.db
+
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
