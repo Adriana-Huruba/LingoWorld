@@ -12,6 +12,7 @@ import { NzInputModule } from 'ng-zorro-antd/input';
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
+
 export class LoginComponent {
   Email = new FormControl(' ', [Validators.required, Validators.email]); 
   Password= new FormControl('');

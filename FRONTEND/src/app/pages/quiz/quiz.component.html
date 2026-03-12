@@ -1,0 +1,36 @@
+<div class="quiz-container">
+    <h3>
+        This initial quiz has the purpose of helping you choose the right language and level for your learning journey. 
+        We will ask you a few simple questions to understand your preferences and current proficiency.
+        Don't worry, there are no right or wrong answers! 
+        All the exercises will help us create a personalized learning path for you, so the more accurate your answers, the better we can tailor the experience to your needs.
+    </h3>
+    <h3>
+        You can always change your language and level preferences later in your profile settings.
+    </h3>
+    @if(currentStep === 'language') {
+        <h2>What language would you like to learn?</h2>
+        <div class="options-grid">
+          @for(language of languages; track language.id) {
+            <button (click)="selectLanguage(language)">
+              <span class="flag">{{ language.flag }}</span> {{ language.name }}
+            </button>
+          }
+        </div>
+    }
+    @else if (currentStep === 'level') {
+        <button (click)="currentStep = 'language'" class="back-btn">← Back</button>
+        <h2>What is your current level?</h2>
+        <div class="options-grid">
+          @for(level of levels; track level.id) {
+            <button (click)="selectLevel(level)">
+              <strong>{{ level.id }}</strong> - {{ level.description }}
+            </button>
+          }
+        </div>
+    }
+    @if(currentStep === 'loading') {
+        <div class="loader"></div>
+        <p>We are preparing exercises for {{ selectedLanguage.name }} at level {{ selectedLevel.id }}...</p>
+    }
+</div>

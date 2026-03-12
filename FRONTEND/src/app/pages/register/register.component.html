@@ -54,5 +54,5 @@
     <button type="submit" [disabled]="registerForm.invalid">Register</button>
   </form>
   
-  <p>Do you already have an account? <a routerLink="/login">Log in here</a></p>
+  <p>Do you already have an account? <a (click)="redirectToLogin()">Log in here</a></p>
 </div>
