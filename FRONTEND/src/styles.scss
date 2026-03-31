@@ -1,2 +1,68 @@
 /* You can add global styles to this file, and also import other style files */
 @import "ng-zorro-antd/ng-zorro-antd.min.css";
+
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+}
+
+// for login and register pages
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 88vh;
+  background-color: #f3f4f6;
+}
+
+.card {
+  background-color: #ffffff;
+  padding: 2.5rem 2rem;
+  border-radius: 12px; 
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); 
+  width: 100%;
+  max-width: 800px; 
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.btn-primary {
+    background-color: #cbeaee;
+    color: rgb(0, 0, 0);
+    padding: 0.75rem;
+    border: none;
+    border-radius: 10px; 
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    background-color: #c1d2f9;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary:active {
+  transform: scale(0.98); 
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0 0.25rem;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+}

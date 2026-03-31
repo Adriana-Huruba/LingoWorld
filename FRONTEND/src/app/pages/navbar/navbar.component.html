@@ -1,42 +1,41 @@
 <nav class="nav">
     <img src="logo.png" class="logo" alt="logo">
-    <div class="nav-links">
-        <a href="../my-vocabulary">My Vocabulary</a>
-        <div class="user-dropdown">
-            <button class="user-button" (click)="isUserDropdownOpen = !isUserDropdownOpen">
-                <img src="user-icon.svg" alt="user icon" class="user-icon">
-            </button>
-            @if(isUserDropdownOpen){
-                <div class="user-options">
-                    <button>Settings</button>
-                    <button>My progress</button>
-                    <button (click)="logout()">Logout</button>
-                </div>
-            }
-        </div>
-       
+    @if(authService.isLoggedIn())
+    {
+        <div class="nav-links">
+            <a href="../my-vocabulary">My Vocabulary</a>
+            <div class="user-dropdown">
+                <button class="user-button" (click)="isUserDropdownOpen = !isUserDropdownOpen">
+                    <img src="user-icon.svg" alt="user icon" class="user-icon">
+                </button>
+                @if(isUserDropdownOpen){
+                    <div class="user-options">
+                        <button>Settings</button>
+                        <button>My progress</button>
+                        <button (click)="logout()">Logout</button>
+                    </div>
+                }
+            </div>
 
-        <div class="language-dropdown">
-            <button class="language-option" (click)="toggleDropdown()">
-                <img src="uk-flag.svg" alt="uk flag icon" class="flag-icon">
-            </button>
-            
-            @if (isDropdownOpen){
-                <div class="other-languages">
-                    <button (click)="selectLanguage('ro')">
-                        <img src="romania-flag.svg" alt="romania flag icon" class="flag-icon">
-                    </button>
-                    <button (click)="selectLanguage('fr')">
-                        <img src="france-flag.svg" alt="france flag icon" class="flag-icon">
-                    </button>
-                    <button (click)="selectLanguage('es')">
-                        <img src="spain-flag.svg" alt="spain flag icon" class="flag-icon">
-                    </button>
-                </div>
-            }
-            
+            <div class="language-dropdown">
+                <button class="language-option" (click)="toggleDropdown()">
+                    <img src="uk-flag.svg" alt="uk flag icon" class="flag-icon">
+                </button>
+                
+                @if (isDropdownOpen){
+                    <div class="other-languages">
+                        <button (click)="selectLanguage('ro')">
+                            <img src="romania-flag.svg" alt="romania flag icon" class="flag-icon">
+                        </button>
+                        <button (click)="selectLanguage('fr')">
+                            <img src="france-flag.svg" alt="france flag icon" class="flag-icon">
+                        </button>
+                        <button (click)="selectLanguage('es')">
+                            <img src="spain-flag.svg" alt="spain flag icon" class="flag-icon">
+                        </button>
+                    </div>
+                }
+            </div>
         </div>
-       
-        <!-- <a routerLink="/about" routerLinkActive="active-link">About</a> -->
-    </div>
+    }
 </nav>

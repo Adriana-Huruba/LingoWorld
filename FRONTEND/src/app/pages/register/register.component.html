@@ -1,58 +1,73 @@
-<h2>Fill in the form below to register</h2>
-<div class="register-container">
-  <form [formGroup]="registerForm" (ngSubmit)="register()">
-    
-    <div>
-      <label>Name:</label>
-      <input type="text" formControlName="name" placeholder="John Smith">
+<div class="container">
+  <div class="card">
+    <div class="header">
+      <h2>Join Lingo World!</h2>      
+      <p>Fill in the form below to register</p>
     </div>
 
-    <div>
-      <label>Email:</label>
-      <input type="email" formControlName="email" placeholder="example@gmail.com">
-    </div>
+    <form class="register-form" [formGroup]="registerForm" (ngSubmit)="register()">
+      <div class="form-wrapper">
+        <div class="form-column left">
+          <div class="input-group">
+            <label for="name">Name</label>
+            <input type="text" id="name" formControlName="name" placeholder="John Smith">
+          </div>
 
-    <div>
-      <label>Role:</label>
-      <select formControlName="role">
-        <option value="student">Student</option>
-        <option value="teacher">Teacher</option>
-        <option value="adult">Adult</option>
-      </select>
-    </div>
+          <div class="input-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" formControlName="email" placeholder="example@gmail.com">
+          </div>
 
-    <div>
-      <label>Language:</label>
-      <div class="radio-group">
-        <label>
-          <input type="radio" formControlName="language" value="english">
-          English
-        </label>
-        
-        <label>
-          <input type="radio" formControlName="language" value="romanian">
-          Romanian
-        </label>
+          <div class="input-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" formControlName="password" placeholder="password123">
+          </div>
+        </div>
+      
+        <div class="form-column right">
+          <div class="input-group">
+            <label for="role">What is your Role?</label>
+            <select id="role" formControlName="role" placeholder="Select your role...">
+              <option value="student">Student</option>
+              <option value="teacher">Teacher</option>
+              <option value="adult_learner">Adult Learner</option>
+            </select>
+          </div>
 
-        <label>
-          <input type="radio" formControlName="language" value="spanish">
-          Spanish
-        </label>
+          <div class="language-options">
+            <label for="language">Language</label>
+            <div class="radio-group">
+              <label>
+                <input type="radio" id="language" formControlName="language" value="english">
+                English
+              </label>
+              
+              <label>
+                <input type="radio" id="romanian" formControlName="language" value="romanian">
+                Romanian
+              </label>
 
-        <label>
-          <input type="radio" formControlName="language" value="french">
-          French
-        </label>
+              <label>
+                <input type="radio" id="spanish" formControlName="language" value="spanish">
+                Spanish
+              </label>
+
+              <label>
+                <input type="radio" id="french" formControlName="language" value="french">
+                French
+              </label>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <div>
-      <label>Password:</label>
-      <input type="password" formControlName="password" placeholder="password123">
-    </div>
+      <button type="button" class="btn-primary" [disabled]="registerForm.invalid">Register</button>
+    </form>
 
-    <button type="submit" [disabled]="registerForm.invalid">Register</button>
-  </form>
-  
-  <p>Do you already have an account? <a (click)="redirectToLogin()">Log in here</a></p>
+    <div class="register-prompt">
+      <span>Do you already have an account?</span>
+      <button type="button" class="btn-link" (click)="redirectToLogin()">Log in here</button> 
+    </div>
+  </div>
+
 </div>

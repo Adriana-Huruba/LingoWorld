@@ -1,5 +1,5 @@
-from sentence_transformers import SentenceTransformer # type: ignore
 import os
+from sentence_transformers import SentenceTransformer # type: ignore
 from dotenv import load_dotenv
 
 load_dotenv() 

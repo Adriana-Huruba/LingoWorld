@@ -22,6 +22,7 @@ class ExerciseRequest(BaseModel):
     category: str = "general"
     level: str = "B2"          
     type: str = "multiple choice" # implicit, if not specified in Angular
+    language: str = "english" # implicit, if not specified in Angular
 
 @app.get("/")
 async def root():
@@ -41,10 +42,11 @@ async def get_exercise(request: ExerciseRequest):
 
         # generation - sending the chunks to LLM to generate the exercise
         exercise_json_text = generate_exercises(
-            relevant_chunks, 
-            request.level, 
-            request.topic, 
-            request.type
+            context_chunks=relevant_chunks, 
+            topic=request.topic, 
+            level=request.level, 
+            type=request.type,
+            language='english'
         )
         
         return {

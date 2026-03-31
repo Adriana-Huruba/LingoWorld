@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
@@ -14,10 +14,16 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 })
 
 export class LoginComponent {
-  Email = new FormControl(' ', [Validators.required, Validators.email]); 
-  Password= new FormControl('');
+  loginForm =  new FormGroup({
+    email: new FormControl(' ', [Validators.required, Validators.email]), 
+    password: new FormControl('', [Validators.required, Validators.minLength(6)])
+  });
 
-  redirectToRegister(){
+  login() {
+    throw new Error('Method not implemented.');
+  }
+
+  redirectToRegister() {
     window.location.href= '/register';
   }
 }

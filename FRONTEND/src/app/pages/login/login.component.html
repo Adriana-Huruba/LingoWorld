@@ -1,16 +1,36 @@
-<h2>Please login to continue</h2>
-<div class="login-form">
-    <p>Email: </p>
-    <input type="text" [formControl]="Email" placeholder="example@gmail.com"/>
+<div class="container">
+  <div class="card">
+    <div class="header">
+      <h2>Welcome!</h2>
+      <p>Please sign in to continue</p>
+    </div>
 
-    <p>Password:</p>
-    <input type="password" [formControl]="Password"/>
+    <form class="login-form" [formGroup]="loginForm" (ngSubmit)="login()">
+      <div class="input-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" formControlName="email" placeholder="example@gmail.com"/>
+      </div>
 
-    <button>Login</button>
-    
-    <p> Or login with google</p>
-   
-    <button (click)="redirectToRegister()">No account? Click here </button> 
+      <div class="input-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" formControlName="password" placeholder="Enter password"/>
+      </div>
 
+      <button type="button" class="btn-primary">Sign In</button>
+
+      <div class="divider">
+        <span>or</span>
+      </div>
+      
+      <button type="button" class="btn-secondary">
+        <img src="google-icon.svg" alt="Google Icon" class="google-icon"/>
+        Sign in with Google
+      </button>
+
+      <div class="register-prompt">
+        <span>Don't have an account?</span>
+        <button type="button" class="btn-link" (click)="redirectToRegister()">Register here</button> 
+      </div>
+    </form>
+  </div>
 </div>
-

@@ -3,14 +3,16 @@ import os
 import uuid
 from pypdf import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from services.vector_service import store_embeddings_batch
+from core.embeddings import create_embedding
+from qdrant_client.models import PointStruct
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 backend_dir = os.path.dirname(current_dir)
 sys.path.append(backend_dir)
 
-from services.vector_service import store_embeddings_batch
-from core.embeddings import create_embedding
-from qdrant_client.models import PointStruct
+language='english'
+level='B2'
 
 def run_ingestion(pdf_path, category):
     reader = PdfReader(pdf_path)
@@ -29,7 +31,7 @@ def run_ingestion(pdf_path, category):
     all_points = []
     
     print("Creating embeddings and storing in Qdrant...")
-    for i, chunk in enumerate(chunks):
+    for i, chunk in enumerate(chunks): # for each chunk, create embedding and store in qdrant
         vector = create_embedding(chunk)
         
         all_points.append(PointStruct( # meta data
@@ -37,7 +39,10 @@ def run_ingestion(pdf_path, category):
             vector=vector.tolist(),
             payload={
                 "text": chunk,
-                "category": category
+                "category": category,
+                "language": language,
+                "level": level,
+                "source": os.path.basename(pdf_path)
             }
         ))
         

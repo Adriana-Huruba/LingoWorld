@@ -2,6 +2,7 @@ from core.embeddings import create_embedding
 from services.vector_service import search_similar
 from services import llm_service
 
+language = 'english' # for now, we can set it as a constant, but in the future we can make it dynamic based on the textbook/language of the user
 def generate_exercises(topic, level, exercise_type="multiple-choice"):
 
     query_vector = create_embedding(topic).tolist()
@@ -14,6 +15,6 @@ def generate_exercises(topic, level, exercise_type="multiple-choice"):
     context = "\n".join([hit.payload["text"] for hit in hits])
     
     # sending context to LLM to generate the exercise
-    exercises = llm_service.generate_exercises(context, topic, level, exercise_type)
+    exercises = llm_service.generate_exercises(context, topic, level, exercise_type, language)
 
     return exercises

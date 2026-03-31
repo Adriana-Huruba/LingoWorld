@@ -1,7 +1,13 @@
+import os
 from qdrant_client import QdrantClient
 from qdrant_client.models import Filter, FieldCondition, MatchValue, PointStruct, VectorParams, Distance
 
-client = QdrantClient("http://localhost:6333")
+# client = QdrantClient("http://localhost:6333")
+
+client= QdrantClient(
+    url = os.getenv("QDRANT_URL"),
+    api_key = os.getenv("QDRANT_API_KEY"))
+
 COLLECTION_NAME = "manual_chunks"
 
 def ensure_collection_exists():
@@ -40,13 +46,15 @@ def store_embedding(id, vector, payload):
     )
 
 
-def search_similar(vector, topic=None):
-    query_filter = None
-    if topic:
-        query_filter = Filter(
-            must=[FieldCondition(key="category", match=MatchValue(value=topic))]
-        )
-
+def search_similar(vector, language=None, category=None, topic=None ):
+    query_filter = Filter(
+        must=[
+            FieldCondition(key="language", match=MatchValue(value=language)),
+            FieldCondition(key="category", match=MatchValue(value=category)),
+            FieldCondition(key="topic", match=MatchValue(value=topic))
+        ]
+    )
+        
     vector_list = vector.tolist() if hasattr(vector, "tolist") else vector  
     return client.query_points(
         collection_name=COLLECTION_NAME,

@@ -1,0 +1,31 @@
+<div class="main-container">
+  <h1>{{ title }}</h1>
+
+  <button (click)="generateNewExercise()" [disabled]="isLoading" class="btn-generate"> 
+    {{ isLoading ? 'Generating...' : 'Generate an exercise' }}
+  </button>
+
+  <hr class="divider">
+
+  @if(isLoading) {
+    <div class="loading-message">
+      <p>It may take a few seconds...</p>
+    </div>
+  }
+
+  @if(errorMessage) {
+    <div class="error-container">
+      <p>{{ errorMessage }}</p>
+    </div>
+  }
+
+  @if(receivedExercise && !isLoading) {
+    <div class="exercise-container">
+      <h3>Exercise for topic: <u>{{ currentTopic }}</u></h3>
+      
+      <pre class="exercise-content">
+        {{ receivedExercise }}
+      </pre>
+    </div>
+  }
+</div>

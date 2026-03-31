@@ -8,6 +8,6 @@ export const routes: Routes = [
     { path : 'register', loadComponent: () => import('./pages/register/register.component').then((component) => component.RegisterComponent)},
     { path: 'quiz', loadComponent: () => import('./pages/quiz/quiz.component').then((component) => component.QuizComponent)},
     { path: 'voice-assistant', loadComponent: () => import('./pages/voice-assistant/voice-assistant.component').then((component) => component.VoiceAssistantComponent) },
-    { path: 'my-vocabulary', loadComponent: () => import('./pages/my-vocabulary/my-vocabulary.component').then((component) => component.MyVocabularyComponent)}
-
+    { path: 'my-vocabulary', loadComponent: () => import('./pages/my-vocabulary/my-vocabulary.component').then((component) => component.MyVocabularyComponent)},
+    { path: 'generator', loadComponent: () => import('./pages/generator/generator.component').then((component) => component.GeneratorComponent) }
 ];
