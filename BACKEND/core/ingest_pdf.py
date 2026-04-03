@@ -9,17 +9,20 @@ from qdrant_client.models import PointStruct
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 backend_dir = os.path.dirname(current_dir)
-sys.path.append(backend_dir)
+if backend_dir not in sys.path:
+    sys.path.append(backend_dir)
 
-language='english'
-level='B2'
-
-def run_ingestion(pdf_path, category):
+def run_ingestion(pdf_path, category, language, level):
+    if not os.path.exists(pdf_path):
+        print(f"Error: File {pdf_path} was not found.")
+        return
+    
     reader = PdfReader(pdf_path)
     text = ""
     for page in reader.pages:
         content = page.extract_text()
-        if content: text += content + "\n"
+        if content: 
+            text += content + "\n"
     
     # split
     splitter = RecursiveCharacterTextSplitter(chunk_size=600, chunk_overlap=100)
@@ -55,7 +58,3 @@ def run_ingestion(pdf_path, category):
         store_embeddings_batch(all_points)
     
     print("\nIngestion completed")
-
-if __name__ == "__main__":
-    PATH_PDF = r"C:\FACULTATE\LICENTA\Licenta2026\BACKEND\data\english_B2.pdf"
-    run_ingestion(PATH_PDF, "communication")

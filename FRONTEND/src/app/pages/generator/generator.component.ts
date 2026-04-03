@@ -25,11 +25,11 @@ export class GeneratorComponent {
     
     // data sent to backend
     const requestData = {
-      topic: 'Past Tense Simple vs Continuous',
-      category: 'grammar',
-      level: 'B1',
+      topic: 'travelling',
+      category: 'manual_engleza',
+      level: 'B2',
       type: 'multiple choice',
-      language: 'english' // implicit
+      language: 'english'
     };
 
     console.log('Sending request to backend...');

@@ -12,14 +12,16 @@ if not api_key:
 
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-def generate_exercises(context_chunks, topic, level, type, language=None): # callied in exercise_service
+def generate_exercises(context_chunks, topic, level, type, language): # callied in exercise_service
   whole_context_text = "\n---\n".join([c.payload['text'] for c in context_chunks])
 
   prompt = f"""
-    You are an {language} professor. Generate an exercise of this type '{type}' for {level} level about '{topic}'.
-    Context from textbook: {whole_context_text}
-    Use the vocabulary and grammar from the context above. 
-    You have to response only in JSON format:
+    You are an {language} professor. Generate an exercise of this type '{type}' for {level} level about '{topic}' in {language}.
+    Use this context from textbook: {whole_context_text} to create the exercise focused only on vocabulary or grammar that appears in the context.
+    Rules: 
+    1. If the context doesn't have enough information, you can use it as inspiration but you should not make up content that is not related to the context.
+    2. Do not ask comprehension questions. Ensure the questions are standalone and don't require reading the source text to be answered or listening to audio.
+    3. The exercise should be in JSON format, with the following structure:
     {{
       "exercise_title": "...",
       "questions": [

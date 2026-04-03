@@ -18,7 +18,7 @@ def ensure_collection_exists():
         print(f"Collection '{COLLECTION_NAME}' does not exist. Creating it now...")
         client.create_collection(
             collection_name=COLLECTION_NAME,
-            # size=384 for all-MiniLM-L6-v2
+            # size=384 for all-MiniLM-L6-v2 and paraphrase-multilingual-MiniLM-L12-v2
             vectors_config=VectorParams(size=384, distance=Distance.COSINE),
         )
         print("Collection created successfully.")
@@ -46,19 +46,23 @@ def store_embedding(id, vector, payload):
     )
 
 
-def search_similar(vector, language=None, category=None, topic=None ):
+def search_similar(vector, language, category):
     query_filter = Filter(
         must=[
             FieldCondition(key="language", match=MatchValue(value=language)),
-            FieldCondition(key="category", match=MatchValue(value=category)),
-            FieldCondition(key="topic", match=MatchValue(value=topic))
+            FieldCondition(key="category", match=MatchValue(value=category))
         ]
     )
         
     vector_list = vector.tolist() if hasattr(vector, "tolist") else vector  
-    return client.query_points(
+    results=client.query_points(
         collection_name=COLLECTION_NAME,
         query=vector_list,
         query_filter=query_filter,
         limit=5
     ).points
+
+    for i, hit in enumerate(results):
+        print(f"Chunk {i+1}: Score = {hit.score:.4f} | Text: {hit.payload['text'][:50]}...")
+
+    return results

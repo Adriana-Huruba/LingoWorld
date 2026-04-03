@@ -9,7 +9,8 @@ if hf_token:
     os.environ["HF_TOKEN"] = hf_token
     # os.environ["HUGGINGFACEHUB_API_TOKEN"] = hf_token
     
-model = SentenceTransformer("all-MiniLM-L6-v2")
+model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
+print(model.get_sentence_embedding_dimension())
 
 def create_embedding(text):
     return model.encode(text)
