@@ -21,7 +21,8 @@ def generate_exercises(context_chunks, topic, level, type, language): # callied 
     Rules: 
     1. If the context doesn't have enough information, you can use it as inspiration but you should not make up content that is not related to the context.
     2. Do not ask comprehension questions. Ensure the questions are standalone and don't require reading the source text to be answered or listening to audio.
-    3. The exercise should be in JSON format, with the following structure:
+    3. Do not generate any conversational text or explanations, only the exercise in JSON format.
+    4. The exercise should be in JSON format, with the following structure:
     {{
       "exercise_title": "...",
       "questions": [

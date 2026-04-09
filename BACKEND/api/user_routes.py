@@ -1,0 +1,21 @@
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from services.user_service import UserService
+
+class RegisterRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+    role: str
+    native_language: str = ""
+    target_language: str = ""
+
+user_router = APIRouter()
+
+@user_router.post('/register')
+async def register(user_info: RegisterRequest):
+    success = UserService.register_user(user_info.model_dump())
+    if success:
+        return {"message": "User registered successfully!"}
+    else:
+        raise HTTPException(status_code=400, detail="Error during registration. Email might already exist.")

@@ -1,12 +1,15 @@
 import os
 from qdrant_client import QdrantClient
-from qdrant_client.models import Filter, FieldCondition, MatchValue, PointStruct, VectorParams, Distance
+from qdrant_client.models import Filter, FieldCondition, MatchValue, PayloadSchemaType, PointStruct, VectorParams, Distance
+from dotenv import load_dotenv
 
 # client = QdrantClient("http://localhost:6333")
 
+load_dotenv()
 client= QdrantClient(
     url = os.getenv("QDRANT_URL"),
-    api_key = os.getenv("QDRANT_API_KEY"))
+    api_key = os.getenv("QDRANT_API_KEY")
+)
 
 COLLECTION_NAME = "manual_chunks"
 
@@ -22,6 +25,17 @@ def ensure_collection_exists():
             vectors_config=VectorParams(size=384, distance=Distance.COSINE),
         )
         print("Collection created successfully.")
+    
+    client.create_payload_index(
+        collection_name=COLLECTION_NAME,
+        field_name="language",
+        field_schema=PayloadSchemaType.KEYWORD,
+    )
+    client.create_payload_index(
+        collection_name=COLLECTION_NAME,
+        field_name="category",
+        field_schema=PayloadSchemaType.KEYWORD,
+    )
 
 # for speed        
 def store_embeddings_batch(points):

@@ -1,45 +1,41 @@
 .register-form{
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-}
-
-.form-wrapper{
-    display: grid;
-    grid-template-columns: 1fr 1fr; 
-    gap: 3rem; 
-    align-items: start; 
-
-    @media (max-width: 768px) {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
-    }
-}
-
-.form-column {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
 }
 
-.language-options {
+.form-wrapper{
+  display: grid;
+  grid-template-columns: 1fr 1fr; 
+  gap: 3rem; 
+  align-items: stretch; 
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+.form-column {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  justify-content: space-between;
+  gap: 1.5rem;
 }
 
 .language-options label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #374151;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
 }
 
-.radio-group{
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    gap: 1rem;
-    width: 100%;
+.language-options, .radio-group{
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 1rem;
+  width: 100%;
 }
 
 .input-group select {

@@ -10,17 +10,17 @@
         <div class="form-column left">
           <div class="input-group">
             <label for="name">Name</label>
-            <input type="text" id="name" formControlName="name" placeholder="John Smith">
+            <input type="text" id="name" formControlName="name" placeholder="John Smith" autocomplete="name">
           </div>
 
           <div class="input-group">
             <label for="email">Email</label>
-            <input type="email" id="email" formControlName="email" placeholder="example@gmail.com">
+            <input type="email" id="email" formControlName="email" placeholder="example@gmail.com" autocomplete="email">
           </div>
 
           <div class="input-group">
             <label for="password">Password</label>
-            <input type="password" id="password" formControlName="password" placeholder="password123">
+            <input type="password" id="password" formControlName="password" placeholder="password123" autocomplete="new-password">
           </div>
         </div>
       
@@ -35,33 +35,58 @@
           </div>
 
           <div class="language-options">
-            <label for="language">Language</label>
+            <label>Native Language</label>
             <div class="radio-group">
               <label>
-                <input type="radio" id="language" formControlName="language" value="english">
+                <input type="radio" id="native_english" formControlName="native_language" value="english">
                 English
               </label>
               
               <label>
-                <input type="radio" id="romanian" formControlName="language" value="romanian">
+                <input type="radio" id="native_romanian" formControlName="native_language" value="romanian">
                 Romanian
               </label>
 
               <label>
-                <input type="radio" id="spanish" formControlName="language" value="spanish">
+                <input type="radio" id="native_spanish" formControlName="native_language" value="spanish">
                 Spanish
               </label>
 
               <label>
-                <input type="radio" id="french" formControlName="language" value="french">
+                <input type="radio" id="native_french" formControlName="native_language" value="french">
                 French
               </label>
             </div>
           </div>
+          <div class="language-options">
+            <label>Target Language</label>
+            <div class="radio-group">
+              <label>
+                <input type="radio" id="target_english" formControlName="target_language" value="english">
+                English
+              </label>
+              
+              <label>
+                <input type="radio" id="target_romanian" formControlName="target_language" value="romanian">
+                Romanian
+              </label>
+
+              <label>
+                <input type="radio" id="target_spanish" formControlName="target_language" value="spanish">
+                Spanish
+              </label>
+
+              <label>
+                <input type="radio" id="target_french" formControlName="target_language" value="french">
+                French
+              </label>
+            </div>
+          </div>
+
         </div>
       </div>
 
-      <button type="button" class="btn-primary" [disabled]="registerForm.invalid">Register</button>
+      <button type="submit" class="btn-primary" [disabled]="registerForm.invalid">Register</button>
     </form>
 
     <div class="register-prompt">

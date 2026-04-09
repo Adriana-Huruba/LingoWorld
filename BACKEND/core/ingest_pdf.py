@@ -1,16 +1,18 @@
 import sys
 import os
 import uuid
+
+# Add backend directory to path BEFORE importing project modules
+current_dir = os.path.dirname(os.path.abspath(__file__))
+backend_dir = os.path.dirname(current_dir)
+if backend_dir not in sys.path:
+    sys.path.append(backend_dir)
+
 from pypdf import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from services.vector_service import store_embeddings_batch
 from core.embeddings import create_embedding
 from qdrant_client.models import PointStruct
-
-current_dir = os.path.dirname(os.path.abspath(__file__))
-backend_dir = os.path.dirname(current_dir)
-if backend_dir not in sys.path:
-    sys.path.append(backend_dir)
 
 def run_ingestion(pdf_path, category, language, level):
     if not os.path.exists(pdf_path):
