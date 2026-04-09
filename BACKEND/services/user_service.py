@@ -1,5 +1,5 @@
 from dao.user_dao import UserDAO
-from core.security import get_password_hash
+from core.security import get_password_hash, verify_password
 
 class UserService:
     @staticmethod
@@ -29,3 +29,28 @@ class UserService:
         except Exception as e:
             print(f"Service Error: {e}")
             return False
+
+    @staticmethod
+    def login_user(email, password):
+        try:
+            user = UserDAO.get_user_by_email(email)
+            if not user:
+                print(f"Login Error: User with email {email} not found.")
+                return None # user not found
+            
+            user_id, name, password_hash, role, native_language, target_language = user
+            
+            if verify_password(password, password_hash):
+                return {
+                    "user_id": user_id,
+                    "name": name,
+                    "email": email,
+                    "role": str(role),
+                    "native_language": native_language,
+                    "target_language": target_language
+                }
+            print("Login Error: Incorrect password.")
+            return None
+        except Exception as e:
+            print(f"Service Error: {e}")
+            return None

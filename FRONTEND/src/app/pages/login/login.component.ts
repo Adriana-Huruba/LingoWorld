@@ -1,5 +1,7 @@
 import { Component } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
 
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
@@ -15,15 +17,33 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 
 export class LoginComponent {
   loginForm =  new FormGroup({
-    email: new FormControl(' ', [Validators.required, Validators.email]), 
+    email: new FormControl('', [Validators.required, Validators.email]), 
     password: new FormControl('', [Validators.required, Validators.minLength(6)])
   });
 
+  constructor(private authService: AuthService, private router: Router) {}
+
   login() {
-    throw new Error('Method not implemented.');
+    if (this.loginForm.valid) {
+      console.log('Login data:', this.loginForm.value);
+      this.authService.login(this.loginForm.value as {email: string, password: string}).subscribe({
+        next: (response) => {
+          console.log('Login successful:', response);
+          this.authService.setLoggedIn(true);
+          alert('Login successful!'); //to do: replace with better notification
+          this.router.navigate(['/']);
+        },
+        error: (err) => {
+          console.error('Login error:', err);
+          alert('Login failed: ' + (err.error?.detail || 'Invalid credentials'));
+        }
+      });
+    } else {
+      alert('Please fill in all required fields correctly.');
+    }
   }
 
   redirectToRegister() {
-    window.location.href= '/register';
+    this.router.navigate(['/register']);
   }
 }

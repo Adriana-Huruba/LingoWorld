@@ -17,3 +17,18 @@ class UserDAO:
         finally:
             cur.close()
             conn.close()
+
+    @staticmethod
+    def get_user_by_email(email):
+        conn = get_db_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute("SELECT * FROM get_user_for_login(%s)", (email,))
+            user = cur.fetchone()
+            return user
+        except Exception as e:
+            print(f"DAO error: {e}")
+            return None
+        finally:
+            cur.close()
+            conn.close()

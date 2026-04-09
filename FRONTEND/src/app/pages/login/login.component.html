@@ -16,7 +16,7 @@
         <input type="password" id="password" formControlName="password" placeholder="Enter password"/>
       </div>
 
-      <button type="button" class="btn-primary">Sign In</button>
+      <button type="submit" class="btn-primary" [disabled]="loginForm.invalid">Sign In</button>
 
       <div class="divider">
         <span>or</span>
