@@ -27,11 +27,14 @@ export class LoginComponent {
     if (this.loginForm.valid) {
       console.log('Login data:', this.loginForm.value);
       this.authService.login(this.loginForm.value as {email: string, password: string}).subscribe({
-        next: (response) => {
+        next: (response: any) => {
           console.log('Login successful:', response);
+          if (response?.user?.target_language) {
+            this.authService.updateTargetLanguage(response.user.target_language);
+          }
           this.authService.setLoggedIn(true);
           alert('Login successful!'); //to do: replace with better notification
-          this.router.navigate(['/']);
+          this.router.navigate(['/quiz']);
         },
         error: (err) => {
           console.error('Login error:', err);

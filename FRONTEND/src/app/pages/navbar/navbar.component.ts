@@ -1,8 +1,10 @@
 import { Component, inject } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-navbar',
+  standalone: true,
   imports: [],
   templateUrl: './navbar.component.html',
   styleUrl: './navbar.component.scss'
@@ -10,33 +12,53 @@ import { AuthService } from '../../core/services/auth.service';
 
 export class NavbarComponent {
   authService = inject(AuthService);
+  router: Router = inject(Router);
+
+  isUserDropdownOpen = false;
+  isDropdownOpen = false;
+
+  languageOptions = [
+    { id: 'en', name: 'English', flag: 'uk-flag.svg' },
+    { id: 'ro', name: 'Română', flag: 'romania-flag.svg' },
+    { id: 'fr', name: 'Français', flag: 'france-flag.svg' },
+    { id: 'es', name: 'Español', flag: 'spain-flag.svg' }
+  ];
+
+  NavigateToDashboard() {
+    this.router.navigate(['/']);
+  }
   
-  isUserDropdownOpen: boolean = false;
-  isDropdownOpen: boolean = false;
-  currentFlag = 'assets/uk-flag.svg';
+  get targetLanguage() {
+    return this.authService.targetLanguage();
+  }
+
+  get currentFlag() {
+    return this.languageOptions.find(lang => lang.id === this.targetLanguage)?.flag || 'uk-flag.svg';
+  }
+
+  get currentLanguageName() {
+    return this.languageOptions.find(lang => lang.id === this.targetLanguage)?.name || 'English';
+  }
+
+  get otherLanguages() {
+    return this.languageOptions.filter(lang => lang.id !== this.targetLanguage);
+  }
 
   logout() {
-    window.location.href= '/login';
+    this.authService.setLoggedIn(false);
+    this.router.navigate(['/login']);
   }
 
   isUserLoggedIn(): boolean {
-    throw new Error('Method not implemented.');
+    return this.authService.isLoggedIn();
   }
+
   toggleDropdown() {
     this.isDropdownOpen = !this.isDropdownOpen;
   }
 
-  languages : { [key: string]: string }= {
-    'RO':'romania-flag.svg',
-    'FR': 'france-flag.svg',
-    'ES': 'spain-flag.svg',
-    'UK': 'assets/uk-flag.svg'
-  };
-
   selectLanguage(lang: string) {
-    console.log('Selected language:', lang);
-
-    this.currentFlag = this.languages[lang];
+    this.authService.updateTargetLanguage(lang);
     this.isDropdownOpen = false;
   }
 }

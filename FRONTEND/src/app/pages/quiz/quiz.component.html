@@ -1,30 +1,21 @@
 <div class="quiz-container">
-    <h3>
-        This initial quiz has the purpose of helping you choose the right language and level for your learning journey. 
-        We will ask you a few simple questions to understand your preferences and current proficiency.
-        Don't worry, there are no right or wrong answers! 
-        All the exercises will help us create a personalized learning path for you, so the more accurate your answers, the better we can tailor the experience to your needs.
-    </h3>
-    <h3>
-        You can always change your language and level preferences later in your profile settings.
-    </h3>
-    @if(currentStep === 'language') {
-        <h2>What language would you like to learn?</h2>
-        <div class="options-grid">
-          @for(language of languages; track language.id) {
-            <button (click)="selectLanguage(language)">
-              <span class="flag">{{ language.flag }}</span> {{ language.name }}
-            </button>
-          }
-        </div>
+    @if (currentStep === 'agreement') {
+      <h3>
+          This initial quiz has the purpose of helping us to understand your preferences and current proficiency in order to recommend the best learning path for you. 
+          You will have to complete a few exercises to find out your level.
+      </h3>
+      <h3>
+          You can always change your language and level preferences later in your profile settings.
+      </h3>
+      <button>I agree to the terms and conditions-GDPR</button>
+      <button class="start-btn" (click)="startQuiz()">Start Quiz</button>
     }
-    @else if (currentStep === 'level') {
-        <button (click)="currentStep = 'language'" class="back-btn">← Back</button>
-        <h2>What is your current level?</h2>
+    @if (currentStep === 'level') {
+        <h2>What do you assume is your current level?</h2>
         <div class="options-grid">
           @for(level of levels; track level.id) {
             <button (click)="selectLevel(level)">
-              <strong>{{ level.id }}</strong> - {{ level.description }}
+              <strong>{{ level.description }}</strong>({{ level.id }})
             </button>
           }
         </div>

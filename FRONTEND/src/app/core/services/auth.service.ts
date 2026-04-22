@@ -6,11 +6,23 @@ import { Observable } from 'rxjs/internal/Observable';
   providedIn: 'root'
 })
 export class AuthService {
-  isLoggedIn = signal<boolean>(false);
+  private languageCodeMap: { [key: string]: string } = {
+    english: 'en', romanian: 'ro', spanish: 'es', french: 'fr',
+    en: 'en', ro: 'ro', es: 'es', fr: 'fr',
+    română: 'ro', français: 'fr', español: 'es'
+  };
 
-  setLoggedIn(status: boolean) { // will be called in backend when the user logs in
-    this.isLoggedIn.set(status);
+  private normalizeLanguage(language: string | null): string {
+    if (!language) {
+      return 'en';
+    }
+    return this.languageCodeMap[language.toLowerCase()] || language.toLowerCase();
   }
+
+  isLoggedIn = signal<boolean>(false);
+  selectedLanguage = signal<string>(this.normalizeLanguage(localStorage.getItem('lang')));
+  targetLanguage = signal<string>(this.normalizeLanguage(localStorage.getItem('target_lang') || localStorage.getItem('lang')));
+
   private apiUrl = 'http://localhost:8000/api'; // url from FastAPI
 
   constructor(private http: HttpClient) {}
@@ -21,5 +33,23 @@ export class AuthService {
 
   login(credentials: {email: string, password: string}): Observable<any> {
     return this.http.post(`${this.apiUrl}/login`, credentials);
+  }
+
+  setLoggedIn(status: boolean) { // will be called in backend when the user logs in
+    this.isLoggedIn.set(status);
+  }
+  
+  updateLanguage(language: string) {
+    const normalized = this.normalizeLanguage(language);
+    this.selectedLanguage.set(normalized);
+    this.targetLanguage.set(normalized);
+    localStorage.setItem('lang', normalized);
+    localStorage.setItem('target_lang', normalized);
+  }
+
+  updateTargetLanguage(language: string) {
+    const normalized = this.normalizeLanguage(language);
+    this.targetLanguage.set(normalized);
+    localStorage.setItem('target_lang', normalized);
   }
 }

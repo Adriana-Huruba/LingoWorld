@@ -8,7 +8,7 @@ import { Component } from '@angular/core';
 })
 
 export class QuizComponent {
-  currentStep: 'language' | 'level' | 'loading' | 'quiz' = 'language';
+  currentStep: 'agreement' | 'level' | 'loading' | 'quiz' | 'exercises' = 'agreement';
   selectedLanguage: any = null;
   selectedLevel: any = null;
 
@@ -27,8 +27,12 @@ export class QuizComponent {
     { id: 'C1', description: 'Advanced' }
   ];
 
-  selectLanguage(lang: any) {
-    this.selectedLanguage = lang;
+  // selectLanguage(lang: any) {
+  //   this.selectedLanguage = lang;
+  //   this.currentStep = 'level';
+  // }
+
+  startQuiz() {
     this.currentStep = 'level';
   }
 

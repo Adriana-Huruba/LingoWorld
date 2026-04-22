@@ -1,5 +1,5 @@
 <nav class="nav">
-    <img src="logo.png" class="logo" alt="logo">
+    <img src="logo.png" class="logo" alt="logo" (click)="NavigateToDashboard()">
     @if(authService.isLoggedIn())
     {
         <div class="nav-links">
@@ -19,20 +19,31 @@
 
             <div class="language-dropdown">
                 <button class="language-option" (click)="toggleDropdown()">
-                    <img src="uk-flag.svg" alt="uk flag icon" class="flag-icon">
+                    <img [src]="currentFlag" [alt]="currentLanguageName + ' flag'" class="flag-icon">
                 </button>
                 
                 @if (isDropdownOpen){
                     <div class="other-languages">
-                        <button (click)="selectLanguage('ro')">
-                            <img src="romania-flag.svg" alt="romania flag icon" class="flag-icon">
-                        </button>
-                        <button (click)="selectLanguage('fr')">
-                            <img src="france-flag.svg" alt="france flag icon" class="flag-icon">
-                        </button>
-                        <button (click)="selectLanguage('es')">
-                            <img src="spain-flag.svg" alt="spain flag icon" class="flag-icon">
-                        </button>
+                        @if (targetLanguage !== 'en'){
+                            <button (click)="selectLanguage('en')">
+                                <img src="uk-flag.svg" alt="English flag" class="flag-icon">
+                            </button>
+                        }
+                        @if (targetLanguage !== 'ro'){
+                            <button (click)="selectLanguage('ro')">
+                                <img src="romania-flag.svg" alt="Romanian flag" class="flag-icon">
+                            </button>
+                        }
+                        @if (targetLanguage !== 'fr'){
+                            <button (click)="selectLanguage('fr')">
+                                <img src="france-flag.svg" alt="French flag" class="flag-icon">
+                            </button>
+                        }
+                        @if (targetLanguage !== 'es'){
+                            <button (click)="selectLanguage('es')">
+                                <img src="spain-flag.svg" alt="Spanish flag" class="flag-icon">
+                            </button>
+                        }
                     </div>
                 }
             </div>
