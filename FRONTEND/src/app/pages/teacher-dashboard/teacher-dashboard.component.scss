@@ -1,0 +1,30 @@
+.classroom-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.classroom-card{
+    background-color: #f0f0f0;
+    padding: 1rem;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.add-class-btn{
+    background-color: #9ecfb2; 
+    border-color: #27ae60;
+    height: 50px;             
+    padding: 0 30px;           
+    font-weight: bold;
+    border-radius: 8px; 
+    margin: 0.5rem;       
+  
+    &:hover {
+        background-color: #27ae60; 
+        transform: scale(1.05);
+        transition: 0.3s;
+    }
+}

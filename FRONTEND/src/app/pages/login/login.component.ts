@@ -7,6 +7,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzNotificationService } from 'ng-zorro-antd/notification';
 
 @Component({
   selector: 'app-login',
@@ -21,28 +22,34 @@ export class LoginComponent {
     password: new FormControl('', [Validators.required, Validators.minLength(6)])
   });
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(private authService: AuthService, private router: Router, private notification: NzNotificationService) {}
 
   login() {
-    if (this.loginForm.valid) {
+    if (this.loginForm.valid) 
+    {
       console.log('Login data:', this.loginForm.value);
+
       this.authService.login(this.loginForm.value as {email: string, password: string}).subscribe({
         next: (response: any) => {
+          this.authService.setSession(response.user);
+
           console.log('Login successful:', response);
-          if (response?.user?.target_language) {
-            this.authService.updateTargetLanguage(response.user.target_language);
+          this.notification.success('Login Successful', 'You have been logged in.');
+          
+          if (response.user.role === 'teacher') {
+            this.router.navigate(['/homepage']);
+          } else {
+            this.router.navigate(['/quiz']);
           }
-          this.authService.setLoggedIn(true);
-          alert('Login successful!'); //to do: replace with better notification
-          this.router.navigate(['/quiz']);
         },
         error: (err) => {
           console.error('Login error:', err);
-          alert('Login failed: ' + (err.error?.detail || 'Invalid credentials'));
+          this.notification.error('Login Failed', 'Invalid credentials');
         }
       });
-    } else {
-      alert('Please fill in all required fields correctly.');
+    } 
+    else {
+      this.notification.warning('Invalid Input','Please fill in all required fields correctly.');
     }
   }
 

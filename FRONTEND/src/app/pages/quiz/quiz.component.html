@@ -1,5 +1,6 @@
 <div class="quiz-container">
-    @if (currentStep === 'agreement') {
+    @if (currentStep === 'agreement') 
+    {
       <h3>
           This initial quiz has the purpose of helping us to understand your preferences and current proficiency in order to recommend the best learning path for you. 
           You will have to complete a few exercises to find out your level.
@@ -10,18 +11,20 @@
       <button>I agree to the terms and conditions-GDPR</button>
       <button class="start-btn" (click)="startQuiz()">Start Quiz</button>
     }
-    @if (currentStep === 'level') {
-        <h2>What do you assume is your current level?</h2>
-        <div class="options-grid">
-          @for(level of levels; track level.id) {
-            <button (click)="selectLevel(level)">
-              <strong>{{ level.description }}</strong>({{ level.id }})
-            </button>
-          }
-        </div>
+    @if (currentStep === 'level') 
+    {
+      <h2>What do you assume is your current level?</h2>
+      <div class="options-grid">
+        @for(level of levels; track level.id) {
+          <button (click)="selectLevel(level)">
+            <strong>{{ level.description }}</strong>({{ level.id }})
+          </button>
+        }
+      </div>
     }
-    @if(currentStep === 'loading') {
-        <div class="loader"></div>
-        <p>We are preparing exercises for {{ selectedLanguage.name }} at level {{ selectedLevel.id }}...</p>
+    @if(currentStep === 'loading') 
+    {
+      <div class="loader"></div>
+      <p>We are preparing exercises for {{ selectedLanguage.name }} at level {{ selectedLevel.id }}...</p>
     }
 </div>

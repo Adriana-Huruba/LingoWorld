@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.exercises_routes import exercises_router
 from api.user_routes import user_router
+from api.user_routes import classroom_router
 
 app = FastAPI()
 
@@ -20,6 +21,7 @@ async def root():
 
 app.include_router(exercises_router, prefix="/api", tags=["Exercises"])
 app.include_router(user_router, prefix="/api", tags=["Users"])
+app.include_router(classroom_router, prefix="/api/classrooms", tags=["Classrooms"])
 
 if __name__ == "__main__":
     import uvicorn

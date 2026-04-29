@@ -1,11 +1,16 @@
 <div class="homepage-container">
-    <p> What would you like to learn today?</p>
-    <h3>Types of exercises:</h3>
-    <div class="exercises">
-        <button>Translation</button>
-        <button>Vocabulary</button>
-        <button>Writing</button>
-        <button>Grammar</button>
-        <button (click)="redirectToVoiceAssistant()" class="redirect-assistant">Pronunciation</button>
-    </div>
+    @if(authService.userRole() === "teacher") {
+        <app-teacher-dashboard></app-teacher-dashboard>
+    }
+    @else {
+        <p> What would you like to learn today?</p>
+        <h3>Types of exercises:</h3>
+        <div class="exercises">
+            <button>Translation</button>
+            <button>Vocabulary</button>
+            <button>Writing</button>
+            <button>Grammar</button>
+            <button (click)="redirectToVoiceAssistant()" class="redirect-assistant">Pronunciation</button>
+        </div>
+    }
 </div>

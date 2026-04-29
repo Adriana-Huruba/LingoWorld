@@ -1,0 +1,20 @@
+<h2>Welcome, Teacher!</h2>
+    <p>Your classes:</p>
+    <div class="classroom-grid">
+        @for(classroom of classrooms; track classroom.id) 
+        {
+            <div class="classroom-card">
+                <h3>{{ classroom.name }}</h3>
+                <p>Invite Code: {{ classroom.invite_code }}</p>
+            </div>
+            }
+    </div>
+    <button nz-button nzType="primary" (click)="showModal()" class="add-class-btn">
+        Add new class
+    </button>
+
+    <nz-modal [(nzVisible)]="isModalVisible" nzTitle="Create new class" (nzOnCancel)="handleCancel()" (nzOnOk)="handleOk()">
+        <ng-container *nzModalContent>
+            <input nz-input placeholder="Class name (ex: English Grade 10B)" [(ngModel)]="newClassName" />
+        </ng-container>
+    </nz-modal>

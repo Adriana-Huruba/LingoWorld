@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from services.user_service import UserService
+from services.classroom_service import ClassroomService
 
 class RegisterRequest(BaseModel):
     name: str
@@ -34,3 +35,26 @@ async def login(credentials: LoginRequest):
         }
     else:
         raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+# endpoints for teachers - classroom management
+class ClassroomCreateRequest(BaseModel):
+    name: str
+    teacher_id: int # future: auth token jwt
+
+classroom_router = APIRouter()
+
+@classroom_router.post('/create')
+async def create_classroom(data: ClassroomCreateRequest):
+    invite_code = ClassroomService.create_new_class(data.name, data.teacher_id)
+    if invite_code:
+        return {
+            "message": "Classroom created successfully",
+            "invite_code": invite_code
+        }
+    else:
+        raise HTTPException(status_code=400, detail="Could not create classroom")
+
+@classroom_router.get('/all/{teacher_id}')
+async def get_teacher_classrooms(teacher_id: int):
+    classrooms = ClassroomService.get_teacher_classrooms(teacher_id)
+    return {"classrooms": classrooms}
