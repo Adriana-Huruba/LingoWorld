@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, signal } from '@angular/core';
 import { Observable } from 'rxjs/internal/Observable';
 
-export type UserRole = 'student' | 'teacher' | 'adult' | null;
+export type UserRole = 'student' | 'teacher' | 'adult-learner' | null;
 
 @Injectable({ 
   providedIn: 'root'
@@ -26,6 +26,7 @@ export class AuthService {
   selectedLanguage = signal<string>(this.normalizeLanguage(localStorage.getItem('lang')));
   targetLanguage = signal<string>(this.normalizeLanguage(localStorage.getItem('target_lang') || localStorage.getItem('lang')));
   userRole = signal<UserRole>(localStorage.getItem('user_role') as UserRole);
+  userName = signal<string>(localStorage.getItem('user_name') || '');
 
   private apiUrl = 'http://localhost:8000/api'; // url from FastAPI
 
@@ -61,15 +62,18 @@ export class AuthService {
     localStorage.setItem('user_id', userData.user_id.toString());
     localStorage.setItem('token', userData.token);
     localStorage.setItem('user_role', userData.role);
+    localStorage.setItem('user_name', userData.name);
 
     this.setLoggedIn(true);
     this.userRole.set(userData.role);
     this.user_id.set(userData.user_id);
+    this.userName.set(userData.name);
   }
 
   logout() {
     this.setLoggedIn(false);
     this.userRole.set(null);
+    this.userName.set('');
     localStorage.clear();
   }
 

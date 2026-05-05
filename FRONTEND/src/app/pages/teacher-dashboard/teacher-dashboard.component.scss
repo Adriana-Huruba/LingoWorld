@@ -1,6 +1,10 @@
+.teacher-dashboard-container {
+    padding: 2rem;
+}
+
 .classroom-grid{
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 1rem;
 }
 
@@ -13,6 +17,19 @@
     gap: 0.5rem;
 }
 
+.classroom-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 0.5rem;
+}
+
+.classroom-icon {
+    width: 40px;
+    height: 40px;
+    transition: transform 0.2s ease;
+}
 .add-class-btn{
     background-color: #9ecfb2; 
     border-color: #27ae60;

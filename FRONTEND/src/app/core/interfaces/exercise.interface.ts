@@ -6,3 +6,12 @@ export interface Exercise {
     answer: string;
     level: "A1" | "A2" | "B1" | "B2" | "C1";
 }
+
+export interface GeneratedExercise {
+    exercise_title: string;
+    questions: {
+        question: string;
+        answer: string;
+        options: string[];
+    }[];
+}

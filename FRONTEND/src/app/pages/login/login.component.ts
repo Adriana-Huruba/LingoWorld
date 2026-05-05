@@ -36,7 +36,7 @@ export class LoginComponent {
           console.log('Login successful:', response);
           this.notification.success('Login Successful', 'You have been logged in.');
           
-          if (response.user.role === 'teacher') {
+          if (response.user.role === 'teacher' || response.user.role === 'student') {
             this.router.navigate(['/homepage']);
           } else {
             this.router.navigate(['/quiz']);

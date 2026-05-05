@@ -23,11 +23,40 @@ class ClassroomDAO:
         conn = get_db_connection()
         cur = conn.cursor()
         try:
-            cur.execute("SELECT id, name, invite_code FROM classrooms WHERE teacher_id = %s", (teacher_id,))
+            cur.execute("CALL get_classrooms_by_teacher(%s)", (teacher_id,)) # to do: stored procedure!
             classrooms = cur.fetchall()
             return [{"id": c[0], "name": c[1], "invite_code": c[2]} for c in classrooms]
         except Exception as e:
             print(f"DAO classroom error: {e}")
+            return []
+        finally:
+            cur.close()
+            conn.close()
+
+    @staticmethod
+    def get_classroom_by_id(classroom_id):
+        conn = get_db_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute("CALL get_classroom_by_id(%s)", (classroom_id,)) # to do: stored procedure
+            classroom = cur.fetchone()
+            if classroom:
+                return {"id": classroom[0], "name": classroom[1], "invite_code": classroom[2]}  
+            return None
+        except Exception as e:
+            print(f"DAO classroom error: {e}")
+            return None
+
+    @staticmethod
+    def get_students_by_classroom(classroom_id):
+        conn = get_db_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute("CALL get_students_by_classroom(%s)", (classroom_id,)) # to do: stored procedure
+            students = cur.fetchall()
+            return [{"id": s[0], "name": s[1], "email": s[2]} for s in students]
+        except Exception as e:
+            print(f"DAO classroom students error: {e}")
             return []
         finally:
             cur.close()

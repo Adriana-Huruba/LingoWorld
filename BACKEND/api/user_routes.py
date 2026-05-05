@@ -58,3 +58,15 @@ async def create_classroom(data: ClassroomCreateRequest):
 async def get_teacher_classrooms(teacher_id: int):
     classrooms = ClassroomService.get_teacher_classrooms(teacher_id)
     return {"classrooms": classrooms}
+
+@classroom_router.get('/{classroom_id}')
+async def get_classroom(classroom_id: int):
+    classroom = ClassroomService.get_classroom(classroom_id)
+    if not classroom:
+        raise HTTPException(status_code=404, detail='Classroom not found')
+    return classroom
+
+@classroom_router.get('/{classroom_id}/students')
+async def get_classroom_students(classroom_id: int):
+    students = ClassroomService.get_classroom_students(classroom_id)
+    return {"students": students}

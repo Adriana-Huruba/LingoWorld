@@ -31,4 +31,12 @@ export class ClassroomService {
     const teacherId = this.authService.user_id();
     return this.http.get(`${this.apiUrl}/all/${teacherId}`);
   }
-}``
+
+  getClassroomById(classroomId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/${classroomId}`);
+  }
+
+  getClassroomStudents(classroomId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/${classroomId}/students`);
+  }
+}

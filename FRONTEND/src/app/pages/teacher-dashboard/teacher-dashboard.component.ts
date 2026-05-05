@@ -4,6 +4,7 @@ import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-teacher-dashboard',
@@ -14,13 +15,25 @@ import { FormsModule } from '@angular/forms';
 
 export class TeacherDashboardComponent {
   private classroomService = inject(ClassroomService);
+  private router = inject(Router);
   
   isModalVisible = false;
   newClassName = '';
   classrooms: any[] = [];
+  searchText: any;
 
   ngOnInit() {
     this.loadClassrooms();
+  }
+
+  filterText() {
+    throw new Error('Method not implemented.'); //to do: filtering by different criteria
+  }
+
+  navigateToClassroom(classroomId: any) {
+    console.log('Navigating to classroom with ID:', classroomId);
+
+    this.router.navigate(['/classroom', classroomId]);
   }
 
   loadClassrooms() {

@@ -1,0 +1,21 @@
+<div class="classroom-header">
+    <h2>{{ classroomName }}</h2>
+    <p>Invite Code: {{ inviteCode }}</p>
+</div>
+<div class="classroom-content">
+    <h3>Classroom Activities</h3>
+    <p>Here you can see the recent activities of your students, such as completed exercises, quiz scores, and progress in their learning paths.</p>
+    <h3>Your students: </h3>
+    <div class="students-list">
+        @for(student of students; track student.id) 
+        {
+            <div class="student-card">
+                <img src="user-icon.svg" alt="Student Avatar" class="student-icon">
+                <div class="student-info">
+                    <h3>{{ student.name }}</h3>
+                    <p>Email: {{ student.email }}</p>
+                </div>
+            </div>
+        }
+   
+</div>
