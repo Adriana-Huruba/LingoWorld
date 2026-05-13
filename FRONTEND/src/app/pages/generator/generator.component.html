@@ -19,13 +19,61 @@
     </div>
   }
 
-  @if(receivedExercise && !isLoading) {
+  @if(receivedExercise && !isLoading) 
+  {
     <div class="exercise-container">
-      <h3>Exercise for topic: <u>{{ currentTopic }}</u></h3>
+      <div class="exercise-header">
+        <span class="badge level-badge">{{ receivedExercise.level }}</span>
+        <span class="badge topic-badge">{{ receivedExercise.topic }}</span>
+      </div>
+
+      <h3>{{ receivedExercise.content.exercise_title }}</h3>
       
-      <pre class="exercise-content">
-        {{ receivedExercise }}
-      </pre>
+      <div class="question-box">
+        <p class="question-text">
+          <strong>Exercise:</strong> {{ receivedExercise.content.questions[0].question }}
+        </p>
+
+        <div class="options-container">
+          @for (option of receivedExercise.content.questions[0].options; track option) {
+            <label class="option-label" 
+              [ngClass]="{
+               'selected': selectedOption === option && isAnswerCorrect === null,
+               'correct-option': isAnswerCorrect !== null && option === receivedExercise.correct_answer,
+               'wrong-option': isAnswerCorrect === false && selectedOption === option
+              }">
+                <input type="radio" name="answerOption" [value]="option" [(ngModel)]="selectedOption" [disabled]="isAnswerCorrect !== null">
+                {{ option }}
+            </label>
+          }
+        </div>
+      </div>
+
+      @if(submitMessage) 
+      {
+        <div class="feedback-message" [ngClass]="{'correct': isAnswerCorrect, 'wrong': isAnswerCorrect === false}">
+          {{ submitMessage }}
+        </div>
+      }
+
+      <div class="action-buttons">
+        @if(isAnswerCorrect === null)
+        {
+          <button class="btn-hint" (click)="useHint()" [disabled]="usedHint">
+            {{ usedHint ? 'Already used hint' : 'Use Hint' }}
+          </button>
+          <button class="btn-submit" (click)="submitAnswer()" [disabled]="!selectedOption">
+            Check answers
+          </button>
+        } 
+        
+        @else 
+        {
+          <button class="btn-next" (click)="generateNewExercise()">
+            Next exercise ➔
+          </button>
+        }
+      </div>
     </div>
   }
 </div>

@@ -2,29 +2,118 @@
     @if (currentStep === 'agreement') 
     {
       <h3>
-          This initial quiz has the purpose of helping us to understand your preferences and current proficiency in order to recommend the best learning path for you. 
-          You will have to complete a few exercises to find out your level.
+        This quiz helps us understand your current level so we can recommend the best learning path for you.
+        You will answer a few exercises across different difficulty levels.
       </h3>
       <h3>
           You can always change your language and level preferences later in your profile settings.
       </h3>
-      <button>I agree to the terms and conditions-GDPR</button>
-      <button class="start-btn" (click)="startQuiz()">Start Quiz</button>
+      <div class="agreement-actions">
+        <label class="checkbox-label">
+          <input type="checkbox" />
+          I agree to the terms and conditions (GDPR)
+        </label>
+        <button class="btn-primary" (click)="startQuiz()">Start Quiz</button>
+      </div>
     }
     @if (currentStep === 'level') 
     {
-      <h2>What do you assume is your current level?</h2>
+      <h2>Select the language you want to learn:</h2>
+      <div class="options-grid" style="margin-bottom: 20px;">
+        @for(lang of languages; track lang.id) {
+          <button class="option-btn" (click)="selectedLanguage = lang" [class.selected]="selectedLanguage?.id === lang.id">
+            {{ lang.flag }} {{ lang.name }}
+          </button>
+        }
+      </div>
+
+      <h2>What is your estimated level?</h2>
       <div class="options-grid">
         @for(level of levels; track level.id) {
           <button (click)="selectLevel(level)">
-            <strong>{{ level.description }}</strong>({{ level.id }})
+            <strong>{{ level.description }}</strong> ({{ level.id }})
           </button>
         }
       </div>
     }
+      
     @if(currentStep === 'loading') 
     {
       <div class="loader"></div>
       <p>We are preparing exercises for {{ selectedLanguage.name }} at level {{ selectedLevel.id }}...</p>
+    }
+
+    @if (currentStep === 'quiz' && currentExercise) 
+    {
+      <div class="step-quiz">
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="progressPercent"></div>
+        </div>
+        <div class="progress-info">
+          <span>{{ currentIndex + 1 }} / {{ exercises.length }}</span>
+          <span class="level-badge">
+            {{ currentExercise.level }}
+          </span>
+        </div>
+  
+        <h3 class="exercise-title">
+          {{ currentExercise.content.exercise_title }}
+        </h3>
+  
+        @if (currentQuestion) {
+          <p class="question-text">{{ currentQuestion.question }}</p>
+  
+          @if (currentExercise.type === 'multiple-choice') 
+          {
+            <div class="options-list">
+              @for (opt of currentQuestion.options; track opt; let i = $index) 
+              {
+                <button class="option-btn" [class.selected]="selectedOption === opt" (click)="selectOption(opt)">
+                  <span class="opt-label">{{ getOptionLabel(i) }}</span>
+                  {{ opt }}
+                </button>
+              }
+            </div>
+          }
+  
+          @if (currentExercise.type === 'gap_fill' || currentExercise.type === 'translation') 
+          {
+            <input type="text" class="text-input" [(ngModel)]="textAnswer" (keydown.enter)="canSubmit && confirmAnswer()" placeholder="Your answer..."/>
+          }
+        }
+  
+        <button class="btn-primary" [disabled]="!canSubmit" (click)="confirmAnswer()">
+          {{ isLastExercise ? 'Finish' : 'Next' }}
+        </button>
+      </div>
+    }
+ 
+    @if (currentStep === 'result' && result) 
+    {
+      <div class="step-result">
+        <div class="result-icon">✓</div>
+        <h2>Your estimated level</h2>
+  
+        <div class="level-display">
+          <span class="level-text">
+            {{ result.estimated_level }}
+          </span>
+          <span class="elo-text">ELO {{ result.starting_elo }}</span>
+        </div>
+  
+        <div class="score-row">
+          <span>{{ result.correct }} / {{ result.total }} correct</span>
+          <span>{{ result.score_percent }}%</span>
+        </div>
+  
+        <p class="result-note">
+          The recommender system will use this level as your starting point.
+          Your ELO score will adjust automatically as you complete exercises.
+        </p>
+  
+        <button class="btn-primary" (click)="goToDashboard()">
+          Start learning →
+        </button>
+      </div>
     }
 </div>

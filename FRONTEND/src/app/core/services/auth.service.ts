@@ -1,12 +1,14 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, computed } from '@angular/core';
 import { Observable } from 'rxjs/internal/Observable';
+import {User} from '../interfaces/user.interface';
 
 export type UserRole = 'student' | 'teacher' | 'adult-learner' | null;
 
 @Injectable({ 
   providedIn: 'root'
 })
+
 export class AuthService {
   private languageCodeMap: { [key: string]: string } = {
     english: 'en', romanian: 'ro', spanish: 'es', french: 'fr',
@@ -14,24 +16,44 @@ export class AuthService {
     română: 'ro', français: 'fr', español: 'es'
   };
   
-  private normalizeLanguage(language: string | null): string {
-    if (!language) {
-      return 'en';
-    }
-    return this.languageCodeMap[language.toLowerCase()] || language.toLowerCase();
-  }
+  private apiUrl = 'http://localhost:8000/api'; // url from FastAPI
+  currentUser = signal<User | null>(this.getUserFromStorage());
 
-  user_id = signal<number>(Number(localStorage.getItem('user_id')));
-  isLoggedIn = signal<boolean>(false);
+  isLoggedIn = computed(() => !!this.currentUser());
+  currentUserId = computed(() => this.currentUser()?.id ?? 0);
+  userRole = computed(() => this.currentUser()?.role ?? null);
+  userName = computed(() => this.currentUser()?.name ?? '');
+
   selectedLanguage = signal<string>(this.normalizeLanguage(localStorage.getItem('lang')));
   targetLanguage = signal<string>(this.normalizeLanguage(localStorage.getItem('target_lang') || localStorage.getItem('lang')));
-  userRole = signal<UserRole>(localStorage.getItem('user_role') as UserRole);
-  userName = signal<string>(localStorage.getItem('user_name') || '');
-
-  private apiUrl = 'http://localhost:8000/api'; // url from FastAPI
 
   constructor(private http: HttpClient) {}
 
+  normalizeLanguage(language: string | null): string {
+    if (!language) 
+      return 'en';
+    return this.languageCodeMap[language.toLowerCase()] || language.toLowerCase();
+  }
+
+  private getUserFromStorage(): User | null {
+    const userId = localStorage.getItem('user_id');
+    if (!userId) 
+      return null;
+
+    return {
+      id: Number(userId),
+      name: localStorage.getItem('user_name') || '',
+      email: localStorage.getItem('user_email') || '',
+      role: localStorage.getItem('user_role') as any,
+      language: localStorage.getItem('lang') as any || 'english',
+      level: localStorage.getItem('user_level') || undefined
+    };
+  }
+
+  get userId(): number{
+    return this.currentUserId();
+  }
+  
   register(userData: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/register`, userData);
   }
@@ -39,11 +61,30 @@ export class AuthService {
   login(credentials: {email: string, password: string}): Observable<any> {
     return this.http.post(`${this.apiUrl}/login`, credentials);
   }
-
-  setLoggedIn(status: boolean) { // will be called in backend when the user logs in
-    this.isLoggedIn.set(status);
-  }
   
+  setSession(userData: any) {   
+    localStorage.setItem('user_id', userData.user_id.toString());
+    localStorage.setItem('token', userData.token);
+    localStorage.setItem('user_role', userData.role);
+    localStorage.setItem('user_name', userData.name);
+    if(userData.email) 
+      localStorage.setItem('user_email', userData.email);
+
+    this.currentUser.set({
+      id: userData.user_id,
+      name: userData.name,
+      email: userData.email || '',
+      role: userData.role,
+      language: (userData.language as any) || 'english',
+      level: userData.level
+    });
+  }
+
+  logout() {
+    localStorage.clear();
+    this.currentUser.set(null);
+  }
+
   updateLanguage(language: string) {
     const normalized = this.normalizeLanguage(language);
     this.selectedLanguage.set(normalized);
@@ -57,24 +98,4 @@ export class AuthService {
     this.targetLanguage.set(normalized);
     localStorage.setItem('target_lang', normalized);
   }
-
-  setSession(userData: any) {   
-    localStorage.setItem('user_id', userData.user_id.toString());
-    localStorage.setItem('token', userData.token);
-    localStorage.setItem('user_role', userData.role);
-    localStorage.setItem('user_name', userData.name);
-
-    this.setLoggedIn(true);
-    this.userRole.set(userData.role);
-    this.user_id.set(userData.user_id);
-    this.userName.set(userData.name);
-  }
-
-  logout() {
-    this.setLoggedIn(false);
-    this.userRole.set(null);
-    this.userName.set('');
-    localStorage.clear();
-  }
-
 }

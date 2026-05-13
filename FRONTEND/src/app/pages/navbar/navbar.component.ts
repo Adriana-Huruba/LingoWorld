@@ -11,7 +11,7 @@ import { Router } from '@angular/router';
 })
 
 export class NavbarComponent {
-  authService = inject(AuthService);
+  public authService = inject(AuthService);
   router: Router = inject(Router);
 
   isUserDropdownOpen = false;
@@ -45,12 +45,8 @@ export class NavbarComponent {
   }
 
   logout() {
-    this.authService.setLoggedIn(false);
+    this.authService.logout();
     this.router.navigate(['/login']);
-  }
-
-  isUserLoggedIn(): boolean {
-    return this.authService.isLoggedIn();
   }
 
   toggleDropdown() {

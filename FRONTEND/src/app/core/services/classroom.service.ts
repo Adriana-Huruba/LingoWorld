@@ -13,7 +13,7 @@ export class ClassroomService {
   private apiUrl = 'http://localhost:8000/api/classrooms';
 
   createClassroom(className: string): Observable<any> {
-    const teacherId = this.authService.user_id(); 
+    const teacherId = this.authService.currentUserId(); 
 
     if (!teacherId) {
       console.error("Did not find the teacher's ID!");
@@ -28,7 +28,7 @@ export class ClassroomService {
   }
 
   getClassroomsOfTeacher(): Observable<any> {
-    const teacherId = this.authService.user_id();
+    const teacherId = this.authService.currentUserId();
     return this.http.get(`${this.apiUrl}/all/${teacherId}`);
   }
 

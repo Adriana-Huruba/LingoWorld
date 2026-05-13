@@ -1,6 +1,7 @@
 # prompt for llm
 
 import os 
+from groq import Groq
 import google.generativeai as genai
 from dotenv import load_dotenv
 
@@ -11,6 +12,9 @@ if not api_key:
   print("Error: GEMINI_API_KEY was not found in .env!")
 
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
 
 def generate_exercises(context_chunks, topic, level, type, language): # callied in exercise_service
   whole_context_text = "\n---\n".join([c.payload['text'] for c in context_chunks])
@@ -50,5 +54,27 @@ def generate_exercises(context_chunks, topic, level, type, language): # callied 
   elif clean_response.startswith("```"):
     clean_response = clean_response.replace("```", "", 1).replace("```", "", 1).strip()
 
+  # try:
+  #   response = client.chat.completions.create(
+  #     messages=[
+  #               {
+  #                   "role": "system",
+  #                   "content": "You are a precise educational assistant that exclusively outputs valid JSON."
+  #               },
+  #               {
+  #                   "role": "user",
+  #                   "content": prompt
+  #               }
+  #           ],
+  #           model="llama-3.1-70b-versatile",
+  #           temperature=0.2,
+  #           response_format={"type": "json_object"}
+  #   )
+  #   return response.choices[0].message.content
+        
+  # except Exception as e:
+  #       print(f"[Groq LLM Service] Error generating exercises: {e}")
+  #       return "{}"
+    
   return clean_response
   

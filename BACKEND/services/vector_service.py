@@ -1,12 +1,10 @@
 import os
 from qdrant_client import QdrantClient
-from qdrant_client.models import Filter, FieldCondition, MatchValue, PayloadSchemaType, PointStruct, VectorParams, Distance
+from qdrant_client.models import Filter, FieldCondition, MatchAny, MatchValue, PayloadSchemaType, PointStruct, VectorParams, Distance
 from dotenv import load_dotenv
 
-# client = QdrantClient("http://localhost:6333")
-
 load_dotenv()
-client= QdrantClient(
+client = QdrantClient(
     url = os.getenv("QDRANT_URL"),
     api_key = os.getenv("QDRANT_API_KEY"),
     timeout=60
@@ -22,23 +20,25 @@ def ensure_collection_exists():
         print(f"Collection '{COLLECTION_NAME}' does not exist. Creating it now...")
         client.create_collection(
             collection_name=COLLECTION_NAME,
-            # size=384 for all-MiniLM-L6-v2 and paraphrase-multilingual-MiniLM-L12-v2
             vectors_config=VectorParams(size=384, distance=Distance.COSINE),
         )
-        client.create_payload_index(
-            collection_name=COLLECTION_NAME,
-            field_name="language",
-            field_schema=PayloadSchemaType.KEYWORD,
-        )
-        client.create_payload_index(
-            collection_name=COLLECTION_NAME,
-            field_name="category",
-            field_schema=PayloadSchemaType.KEYWORD,
-        )
+        
+        # index for faster filtering (Corectat: create_payload_index)
+        for field in ["language", "level", "skill_type", "topic", "source"]:
+            client.create_payload_index(
+                collection_name=COLLECTION_NAME,
+                field_name=field,
+                field_schema=PayloadSchemaType.KEYWORD,
+            )
 
+        # index for faster sorting
+        client.create_payload_index(
+            collection_name=COLLECTION_NAME,
+            field_name="chunk_index",
+            field_schema=PayloadSchemaType.INTEGER,
+        )
         print("Collection created successfully.")
     
-# for speed        
 def store_embeddings_batch(points):
     ensure_collection_exists()
     client.upsert(
@@ -48,36 +48,72 @@ def store_embeddings_batch(points):
 
 def store_embedding(id, vector, payload):
     ensure_collection_exists()
+    point = PointStruct(id=id, vector=vector, payload=payload)
+    client.upsert(collection_name=COLLECTION_NAME, points=[point])
 
-    point = PointStruct(
-        id=id,
-        vector=vector,
-        payload=payload
-    )
-    
-    client.upsert(
-        collection_name=COLLECTION_NAME,
-        points=[point]
-    )
-
-
-def search_similar(vector, language, category):
+def search_similar(vector, language, level=None, skill_type=None, topic=None, limit=5):
     query_filter = Filter(
         must=[
             FieldCondition(key="language", match=MatchValue(value=language)),
-            FieldCondition(key="category", match=MatchValue(value=category))
         ]
     )
+    
+    if level:
+        query_filter.must.append(FieldCondition(key="level", match=MatchValue(value=level)))
         
+    if skill_type and skill_type != "general":
+        query_filter.must.append(FieldCondition(key="skill_type", match=MatchValue(value=skill_type)))
+    
+    if topic and topic != "general":
+        query_filter.must.append(FieldCondition(key="topic", match=MatchValue(value=topic)))
+
     vector_list = vector.tolist() if hasattr(vector, "tolist") else vector  
-    results=client.query_points(
+
+    results = client.query_points(
         collection_name=COLLECTION_NAME,
         query=vector_list,
         query_filter=query_filter,
-        limit=5
+        limit=limit
     ).points
 
     for i, hit in enumerate(results):
         print(f"Chunk {i+1}: Score = {hit.score:.4f} | Text: {hit.payload['text'][:50]}...")
+
+    return results
+
+def search_for_recommender(vector, language, levels=None, skill_type=None, topic=None, exclude_sources=None, limit=5): 
+    query_filter = Filter(
+        must=[
+            FieldCondition(key="language", match=MatchValue(value=language)),
+        ],
+        must_not=[] 
+    )
+
+    if levels:
+        query_filter.must.append(FieldCondition(key="level", match=MatchAny(any=levels)))
+
+    if skill_type and skill_type != "general":
+        query_filter.must.append(
+            FieldCondition(key="skill_type", match=MatchValue(value=skill_type))
+        )
+
+    if topic and topic != "general":
+        query_filter.must.append(
+            FieldCondition(key="topic", match=MatchValue(value=topic))
+        )
+        
+    if exclude_sources:
+        query_filter.must_not.append(
+            FieldCondition(key="source", match=MatchAny(any=exclude_sources))
+        )
+
+    vector_list = vector.tolist() if hasattr(vector, "tolist") else vector
+
+    results = client.query_points(
+        collection_name=COLLECTION_NAME,
+        query=vector_list,
+        query_filter=query_filter,
+        limit=limit
+    ).points
 
     return results
