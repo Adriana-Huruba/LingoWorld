@@ -17,3 +17,11 @@ def get_db_connection():
     except Exception as e:
         print(f"Error at connecting with database: {e}")
         return None
+    
+def get_db():
+    db = get_db_connection()
+    try:
+        yield db
+    finally:
+        if db:
+            db.close()

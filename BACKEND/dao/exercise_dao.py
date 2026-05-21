@@ -2,6 +2,8 @@ import json
 from typing import Optional
 
 class ExerciseDAO:
+    # TODO
+    #verif content-daca e doar un ex/lista
     @staticmethod
     def insert_exercise(language, level, exercise_type, category, topic, content, correct_answer, elo_difficulty, source_manual, conn) -> Optional[int]:
         try:

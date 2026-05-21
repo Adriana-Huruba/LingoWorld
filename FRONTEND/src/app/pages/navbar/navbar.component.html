@@ -3,9 +3,9 @@
     @if(authService.isLoggedIn())
     {
         <div class="nav-links">
-            <a href="../my-vocabulary">My Vocabulary</a>
+            <button class="vocabulary" (click)="NavigateToVocabulary()">My vocabulary</button>
             <div class="user-dropdown">
-                <button class="user-button" (click)="isUserDropdownOpen = !isUserDropdownOpen">
+                <button class="user-button" (click)="toggleUserDropdown($event)">
                     <img src="user-icon.svg" alt="user icon" class="user-icon">
                 </button>
                 @if(isUserDropdownOpen){
@@ -18,7 +18,7 @@
             </div>
 
             <div class="language-dropdown">
-                <button class="language-option" (click)="toggleDropdown()">
+                <button class="language-option" (click)="toggleDropdown($event)">
                     <img [src]="currentFlag" [alt]="currentLanguageName + ' flag'" class="flag-icon">
                 </button>
                 

@@ -2,7 +2,10 @@
     @if(authService.userRole() === "teacher") {
         <app-teacher-dashboard></app-teacher-dashboard>
     }
-    @else {
+    @if(authService.userRole() === "student") {
+        <app-student-dashboard></app-student-dashboard>
+    }   
+    @if(authService.userRole() === "adult-learner") {
         <p> What would you like to learn today?</p>
         <h3>Types of exercises:</h3>
         <div class="exercises">

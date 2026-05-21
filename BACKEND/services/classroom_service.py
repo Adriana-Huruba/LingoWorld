@@ -18,3 +18,15 @@ class ClassroomService:
     @staticmethod
     def get_classroom_students(classroom_id):
         return ClassroomDAO.get_students_by_classroom(classroom_id)
+    
+    @staticmethod
+    def enroll_student(student_id, invite_code):
+        if not invite_code:
+            return False, "Invite code can't be empty!"
+        return ClassroomDAO.enroll_student(student_id, invite_code)
+    
+    @staticmethod
+    def get_student_classrooms(student_id):
+        if not student_id:
+            return []
+        return ClassroomDAO.get_classrooms_by_student(student_id)

@@ -1,21 +1,150 @@
 <div class="classroom-header">
-    <h2>{{ classroomName }}</h2>
-    <p>Invite Code: {{ inviteCode }}</p>
+    <button (click)="returnToDashboard()" class="button-icon">  
+        <nz-icon nzType="arrow-left" nzTheme="outline" />
+    </button>
+    <div class="classroom-details"> 
+        <h2>{{ classroomName }}</h2>
+        <span>  Invite code: {{ inviteCode }}
+        <button class="button-icon"> <nz-icon nzType="copy" nzTheme="outline" nzTooltipTitle="Copy this code" /> </button> </span> 
+    </div>
+    
+    <p>Here you can see the recent activities of your students, such as completed exercises, quiz scores, and progress in their learning paths.</p>
 </div>
 <div class="classroom-content">
-    <h3>Classroom Activities</h3>
-    <p>Here you can see the recent activities of your students, such as completed exercises, quiz scores, and progress in their learning paths.</p>
-    <h3>Your students: </h3>
-    <div class="students-list">
-        @for(student of students; track student.id) 
+    <aside class="sidebar">
+        <button [class.active]="activeTab === 'students'" (click)="setActiveTab('students')">
+            <nz-icon nzType="team" /> Students
+        </button>
+        <button [class.active]="activeTab === 'docs'" (click)="setActiveTab('docs')">
+            <nz-icon nzType="file-pdf" /> Generate resources
+        </button>
+        <button [class.active]="activeTab === 'assignments'" (click)="setActiveTab('assignments')">
+            <nz-icon nzType="profile" nzTheme="outline" /> Assignments
+        </button>
+        <button [class.active]="activeTab === 'settings'" (click)="setActiveTab('settings')">
+            <nz-icon nzType="setting" /> Settings
+        </button>
+    </aside>
+    
+    <main class="content">
+        @if (activeTab === 'students') 
         {
-            <div class="student-card">
-                <img src="user-icon.svg" alt="Student Avatar" class="student-icon">
-                <div class="student-info">
-                    <h3>{{ student.name }}</h3>
-                    <p>Email: {{ student.email }}</p>
+            <section>
+                <h3>Enrolled Students</h3>
+                <p>Manage your students and view their progress.</p>
+                <h3>Your students: </h3>
+                <div class="students-list">
+                @for(student of students; track student.id) {
+                    <div class="student-card">
+                        <img src="user-icon.svg" alt="Student Avatar" class="student-icon">
+                        <div class="student-card-content">
+                            <div class="student-info">
+                                <h3>{{ student.name }}</h3>
+                                <p>{{ student.email }}</p>
+                            </div>
+                            <div class="student-details">
+                                <span class="badge-elo"><nz-icon nzType="trophy" nzTheme="outline" /> {{ student.elo_score }} Elo</span>
+                                <span class="badge-xp"><nz-icon nzType="thunderbolt" nzTheme="outline" /> {{ student.xp }} XP</span>
+                                <span><img src="task-done.svg" alt="done svg" class="done-icon">0 assignments done</span>
+                            </div>
+                        </div>
+                    </div>
+                }@empty {
+                    <p>No students enrolled yet</p>
+                }
                 </div>
-            </div>
+        </section>
         }
-   
+
+        @if (activeTab === 'assignments') {
+            <section class="tab-section">
+                <div class="section-header">
+                    <div>
+                        <h3>Class assignments</h3>
+                        <p>Here you can create and track homework or practice tests.</p>
+                    </div>
+                    <button nz-button nzType="primary"><nz-icon nzType="plus" /> Create Assignment</button>
+                </div>
+                
+                <div class="empty-state">
+                    <nz-icon nzType="file-text" nzTheme="outline" />
+                    <p>No assignments created yet.</p>
+                </div>
+            </section>
+        }
+        @if (activeTab === 'docs') {
+            <section>
+                <div class="section-header">
+                    <div>
+                        <h3>AI document generator</h3>
+                        <p>Upload a textbook to automatically extract vocabulary and generate practice sheets.</p>
+                    </div>
+                </div>
+
+                <div class="upload-zone">
+                    <nz-icon nzType="cloud-upload" nzTheme="outline" class="upload-icon" />
+                    <h4>Drag and drop your PDF textbook here</h4>
+                    <p>or click to browse from your computer</p>
+                    <button nz-button nzType="default">Browse files</button>
+                </div>
+
+                <div class="generation-filters">
+                    <h4><nz-icon nzType="sliders" nzTheme="outline" /> AI Configuration</h4>
+                    
+                    <div class="filter-grid">
+                        <div class="filter-item">
+                            <label>Subject</label>
+                            <input nz-input placeholder="Past Tense, health..." [(ngModel)]="topic" />
+                        </div>
+                        
+                        <div class="filter-item">
+                            <label>Number of exercises</label>
+                            <nz-input-number [(ngModel)]="numberOfExercises " [nzMin]="1" [nzMax]="50" [nzStep]="1" style="width: 100%;"></nz-input-number>
+                        </div>
+
+                        <div class="filter-item">
+                            <label>Focus Area</label>
+                            <nz-select [(ngModel)]="focus" style="width: 100%;">
+                                <nz-option nzValue="grammar" nzLabel="Grammar & Structure"></nz-option>
+                                <nz-option nzValue="vocabulary" nzLabel="Vocabulary & Synonyms"></nz-option>
+                                <nz-option nzValue="conjugation" nzLabel="Verb Conjugation"></nz-option>
+                                <nz-option nzValue="reading" nzLabel="Reading Comprehension"></nz-option>
+                            </nz-select>
+                        </div>
+
+                        <div class="filter-item">
+                            <label>Exercise Types</label>
+                            <nz-select nzMode="multiple" [(ngModel)]="typesOfExercises" nzPlaceHolder="Select types" style="width: 100%;">
+                                <nz-option nzValue="multiple_choice" nzLabel="Multiple Choice"></nz-option>
+                                <nz-option nzValue="fill_blanks" nzLabel="Fill in the Blanks"></nz-option>
+                                <nz-option nzValue="true_false" nzLabel="True / False"></nz-option>
+                                <nz-option nzValue="matching" nzLabel="Matching Pairs"></nz-option>
+                            </nz-select>
+                        </div>
+                    </div>
+                </div>
+                <div class="actions-row">
+                    <button nz-button nzType="primary" class="ai-btn">
+                        Generate worksheets
+                    </button>
+                    <button nz-button nzType="default">
+                        <nz-icon nzType="download" nzTheme="outline" /> Class Report
+                    </button>
+                </div>
+            </section>
+        }
+
+        @if (activeTab === 'settings') {
+        <section>
+            <h3>Class settings</h3>
+            <div class="settings-card">
+                <h4>General Information</h4>
+                <label>Classroom name</label>
+                <input nz-input [ngModel]="classroomName" placeholder="Example: English 101" />
+                <button nz-button nzType="primary">Save changes</button>
+            </div>
+            <button nz-button nzDanger>Delete classroom</button>
+        </section>
+        }
+    </main>
 </div>

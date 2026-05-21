@@ -27,6 +27,14 @@ export class ClassroomService {
     return this.http.post(`${this.apiUrl}/create`, body);
   }
 
+  enrollStudent(studentId: number, inviteCode: string): Observable<any> {
+    const payload = {
+      student_id: studentId,
+      invite_code: inviteCode
+    };
+    return this.http.post(`${this.apiUrl}/enroll`, payload);
+  }
+
   getClassroomsOfTeacher(): Observable<any> {
     const teacherId = this.authService.currentUserId();
     return this.http.get(`${this.apiUrl}/all/${teacherId}`);
@@ -38,5 +46,9 @@ export class ClassroomService {
 
   getClassroomStudents(classroomId: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/${classroomId}/students`);
+  }
+
+  getStudentClassrooms(studentId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/student-classes/${studentId}`);
   }
 }

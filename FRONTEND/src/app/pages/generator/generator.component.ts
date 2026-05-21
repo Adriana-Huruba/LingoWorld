@@ -75,7 +75,7 @@ export class GeneratorComponent {
 
   useHint() {
     this.usedHint = true;
-    //TO DO: logic for generating + showing the hint
+    //TODO: logic for generating + showing the hint
   }
 
   submitAnswer() {

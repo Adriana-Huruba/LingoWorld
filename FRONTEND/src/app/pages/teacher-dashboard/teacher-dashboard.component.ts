@@ -3,12 +3,13 @@ import { ClassroomService } from '../../core/services/classroom.service';
 import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzButtonModule } from 'ng-zorro-antd/button';
+import { NzIconModule } from 'ng-zorro-antd/icon';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-teacher-dashboard',
-  imports: [ NzModalModule, NzInputModule, NzButtonModule, FormsModule ],
+  imports: [ NzModalModule, NzInputModule, NzButtonModule, FormsModule, NzIconModule],
   templateUrl: './teacher-dashboard.component.html',
   styleUrl: './teacher-dashboard.component.scss'
 })
@@ -27,7 +28,7 @@ export class TeacherDashboardComponent {
   }
 
   filterText() {
-    throw new Error('Method not implemented.'); //to do: filtering by different criteria
+    throw new Error('Method not implemented.'); //TODO: filtering by different criteria
   }
 
   navigateToClassroom(classroomId: any) {

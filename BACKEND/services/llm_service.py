@@ -15,6 +15,10 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
+# TODO:
+generation_config = {
+  "response_mime_type": "application/json",
+}
 
 def generate_exercises(context_chunks, topic, level, type, language): # callied in exercise_service
   whole_context_text = "\n---\n".join([c.payload['text'] for c in context_chunks])
@@ -45,14 +49,9 @@ def generate_exercises(context_chunks, topic, level, type, language): # callied 
     #     contents=prompt
     # )
 
-  model = genai.GenerativeModel('gemini-2.5-flash')
+  model = genai.GenerativeModel(model_name='gemini-2.5-flash', generation_config=generation_config)
   response = model.generate_content(prompt)
-
-  clean_response = response.text.strip() #nu merge
-  if clean_response.startswith("```json"):
-    clean_response = clean_response.replace("```json", "", 1).replace("```", "", 1).strip()
-  elif clean_response.startswith("```"):
-    clean_response = clean_response.replace("```", "", 1).replace("```", "", 1).strip()
+  return response
 
   # try:
   #   response = client.chat.completions.create(
@@ -76,5 +75,5 @@ def generate_exercises(context_chunks, topic, level, type, language): # callied 
   #       print(f"[Groq LLM Service] Error generating exercises: {e}")
   #       return "{}"
     
-  return clean_response
+
   

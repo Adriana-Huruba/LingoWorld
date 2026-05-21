@@ -1,0 +1,36 @@
+<div class="student-dashboard-container">
+    <h2>Welcome, {{student()?.name}}!</h2>
+    <div class="search-bar">
+        <input nz-input placeholder="Search for a class..." [(ngModel)]="searchText" (input)="filterText()" />
+        <button> 
+            <nz-icon nzType="search" nzTheme="outline" />
+        </button>
+    </div>
+
+    <button nz-button nzType="primary" (click)="enrollIn()" class="add-class-btn">
+        <nz-icon nzType="plus" nzTheme="outline" />
+        Enter a new class
+    </button>
+
+    <nz-modal [(nzVisible)]="isModalVisible" nzTitle="Enroll in a new class" (nzOnCancel)="handleCancel()" (nzOnOk)="handleOk()">
+        <ng-container *nzModalContent>
+            <input nz-input placeholder="Classroom inivitation code" [(ngModel)]="inviteCode" />
+        </ng-container>
+    </nz-modal>
+    <p>Your classes:</p>
+    <div class="classroom-grid">
+        @for(classroom of classrooms; track classroom.id) 
+        {
+            <div class="classroom-card" (click)="navigateToClassroom(classroom.id)">
+                <button class="classroom-button">
+                    <img src="classroom.svg" alt="Classroom icon" class="classroom-icon">
+                </button>
+                <h3>{{ classroom.name }}</h3>
+                <p>Teacher: {{ classroom.teacher_name}}</p>
+            </div>
+        }
+    </div>
+    <div class="assignments-due">
+        Assignments due
+    </div>
+</div>

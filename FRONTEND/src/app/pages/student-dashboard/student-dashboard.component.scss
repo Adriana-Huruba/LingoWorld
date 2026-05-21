@@ -1,0 +1,57 @@
+.teacher-dashboard-container {
+    padding: 1rem;
+}
+
+.classroom-grid{
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.classroom-card{
+    background-color: #f0f0f0;
+    padding: 1rem;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.classroom-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 0.5rem;
+}
+
+.classroom-icon {
+    width: 40px;
+    height: 40px;
+    transition: transform 0.2s ease;
+}
+.add-class-btn{
+    background-color: #3f77ac;
+    border-color: #3f77ac;
+
+    height: 50px;             
+    padding: 0 30px;           
+    font-weight: bold;
+    border-radius: 8px; 
+    margin: 0.5rem;       
+  
+    &:hover {
+        background-color: #27ae60; 
+        transform: scale(1.05);
+        transition: 0.3s;
+    }
+}
+
+.assignments-due
+{
+    display: flex;
+    flex-direction: column;
+    margin-top: 2rem;
+    border: gray;
+    width: 100%;
+}

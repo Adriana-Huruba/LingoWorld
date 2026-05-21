@@ -2,17 +2,21 @@
     <h2>Welcome, Teacher!</h2>
     <div class="search-bar">
         <input nz-input placeholder="Search for a class/student..." [(ngModel)]="searchText" (input)="filterText()" />
+        <button> 
+            <nz-icon nzType="search" nzTheme="outline" />
+        </button>
     </div>
     <p>Your classes:</p>
     <div class="classroom-grid">
         @for(classroom of classrooms; track classroom.id) 
         {
-            <div class="classroom-card">
-                <button class="classroom-button" (click)="navigateToClassroom(classroom.id)">
+            <div class="classroom-card" (click)="navigateToClassroom(classroom.id)">
+                <button class="classroom-button">
                     <img src="classroom.svg" alt="Classroom icon" class="classroom-icon">
                 </button>
                 <h3>{{ classroom.name }}</h3>
-                <p>Invite Code: {{ classroom.invite_code }}</p>
+                <nz-icon nzType="team" /> 
+        <span class="student-badge">{{ classroom.student_count || 0 }} students</span>
             </div>
         }
     </div>

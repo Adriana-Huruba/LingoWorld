@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, ElementRef, inject, HostListener } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
 import { Router } from '@angular/router';
 
@@ -12,6 +12,7 @@ import { Router } from '@angular/router';
 
 export class NavbarComponent {
   public authService = inject(AuthService);
+  eRef = inject(ElementRef);
   router: Router = inject(Router);
 
   isUserDropdownOpen = false;
@@ -24,8 +25,20 @@ export class NavbarComponent {
     { id: 'es', name: 'Español', flag: 'spain-flag.svg' }
   ];
 
+  @HostListener('document:click', ['$event'])
+  clickout(event: Event) {
+    if (!this.eRef.nativeElement.contains(event.target)) {
+      this.isDropdownOpen = false;
+      this.isUserDropdownOpen = false;
+    }
+  }
+
   NavigateToDashboard() {
     this.router.navigate(['/']);
+  }
+
+  NavigateToVocabulary() {
+    this.router.navigate(['/my-vocabulary']);
   }
   
   get targetLanguage() {
@@ -46,11 +59,20 @@ export class NavbarComponent {
 
   logout() {
     this.authService.logout();
+    this.isUserDropdownOpen = false;
     this.router.navigate(['/login']);
   }
 
-  toggleDropdown() {
+  toggleUserDropdown(event: Event) {
+    event.stopPropagation();
+    this.isUserDropdownOpen = !this.isUserDropdownOpen;
+    this.isDropdownOpen = false;
+  }
+
+  toggleDropdown(event: Event) {
+    event.stopPropagation();
     this.isDropdownOpen = !this.isDropdownOpen;
+    this.isUserDropdownOpen = false;
   }
 
   selectLanguage(lang: string) {

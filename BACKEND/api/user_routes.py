@@ -70,3 +70,24 @@ async def get_classroom(classroom_id: int):
 async def get_classroom_students(classroom_id: int):
     students = ClassroomService.get_classroom_students(classroom_id)
     return {"students": students}
+
+# endpoints for students
+class EnrollStudent(BaseModel):
+    invite_code: str
+    student_id: int 
+
+@classroom_router.post('/enroll')
+async def enroll_student(data: EnrollStudent):
+    success, message = ClassroomService.enroll_student(data.student_id, data.invite_code)
+    if success:
+        return {
+            "message": message
+        }
+    else:
+        raise HTTPException(status_code=400, detail=message)
+
+@classroom_router.get('/student-classes/{student_id}')
+async def get_student_classrooms(student_id: int):
+    classrooms = ClassroomService.get_student_classrooms(student_id)
+    return {"classrooms": classrooms}
+    

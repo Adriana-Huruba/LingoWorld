@@ -1,10 +1,18 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router} from '@angular/router';
 import { ClassroomService } from '../../core/services/classroom.service';
+import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzTabsModule } from 'ng-zorro-antd/tabs'; 
+import { NzButtonModule } from 'ng-zorro-antd/button'; 
+import { CommonModule } from '@angular/common';
+import { NzSelectModule } from 'ng-zorro-antd/select';
+import { FormsModule } from '@angular/forms';
+import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 
 @Component({
   selector: 'app-classroom',
-  imports: [],
+  standalone: true, 
+  imports: [CommonModule, NzIconModule, NzTabsModule, NzButtonModule, FormsModule, NzSelectModule, NzInputNumberModule],
   templateUrl: './classroom.component.html',
   styleUrl: './classroom.component.scss'
 })
@@ -12,11 +20,18 @@ import { ClassroomService } from '../../core/services/classroom.service';
 export class ClassroomComponent implements OnInit {
   private classroomService = inject(ClassroomService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
   students: any[] = [];
   classroomName = '';
   inviteCode = '';
   errorMessage = '';
+
+  activeTab: string = 'students';
+
+  setActiveTab(tabName: string) {
+    this.activeTab = tabName;
+  }
 
   ngOnInit() {
     const idParam = this.route.snapshot.paramMap.get('id');
@@ -33,6 +48,10 @@ export class ClassroomComponent implements OnInit {
 
     this.loadClassroom(classroomId);
     this.loadStudents(classroomId);
+  }
+
+  returnToDashboard() {
+    this.router.navigate(['/homepage']);
   }
 
   loadClassroom(classroomId: number) {
@@ -57,6 +76,27 @@ export class ClassroomComponent implements OnInit {
         console.error('Error loading classroom students', err);
       }
     });
+  }
+
+  topic = '';
+  numberOfExercises = 10;
+  focus = 'grammar';
+  typesOfExercises: string[] = ['multiple_choice', 'fill-in-the-blank']; 
+  
+  isGenerating = false;
+  isGenerated = false; // 
+
+
+  generateResource() {
+    if (!this.topic) 
+      return;
+    
+    this.isGenerating = true;
+      
+    setTimeout(() => {
+      this.isGenerating = false;
+      this.isGenerated = true;
+    }, 3000);
   }
 }
 
