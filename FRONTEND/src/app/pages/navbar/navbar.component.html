@@ -10,8 +10,8 @@
                 </button>
                 @if(isUserDropdownOpen){
                     <div class="user-options">
-                        <button>Settings</button>
-                        <button>My progress</button>
+                        <button (click)="NavigateToSettings()">Settings</button>
+                        <button (click)="NavigateToProgres()">My progress</button>
                         <button (click)="logout()">Logout</button>
                     </div>
                 }

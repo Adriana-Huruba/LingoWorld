@@ -40,16 +40,17 @@ export class LoginComponent {
             this.router.navigate(['/homepage']);
           } else {
             this.router.navigate(['/quiz']);
+            // this.router.navigate(['/homepage']);
           }
         },
         error: (err) => {
           console.error('Login error:', err);
-          this.notification.error('Login Failed', 'Invalid credentials');
+          this.notification.error('Login failed', 'Invalid credentials');
         }
       });
     } 
     else {
-      this.notification.warning('Invalid Input','Please fill in all required fields correctly.');
+      this.notification.warning('Invalid input','Please fill in all required fields correctly.');
     }
   }
 

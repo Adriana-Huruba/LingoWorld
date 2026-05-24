@@ -1,4 +1,4 @@
-# prompt for llm
+# prompt for llm, without agent
 
 import os 
 from groq import Groq
@@ -51,7 +51,7 @@ def generate_exercises(context_chunks, topic, level, type, language): # callied 
 
   model = genai.GenerativeModel(model_name='gemini-2.5-flash', generation_config=generation_config)
   response = model.generate_content(prompt)
-  return response
+  return response.text
 
   # try:
   #   response = client.chat.completions.create(

@@ -11,4 +11,5 @@ export const routes: Routes = [
     { path: 'my-vocabulary', loadComponent: () => import('./pages/my-vocabulary/my-vocabulary.component').then((component) => component.MyVocabularyComponent)},
     { path: 'generator', loadComponent: () => import('./pages/generator/generator.component').then((component) => component.GeneratorComponent) },
     { path: 'classroom/:id', loadComponent: () => import('./pages/classroom/classroom.component').then((component) => component.ClassroomComponent) },
+    { path: 'class/:id', loadComponent: () => import('./pages/student/student-classroom/student-classroom.component').then((component) => component.StudentClassroomComponent) }
 ];

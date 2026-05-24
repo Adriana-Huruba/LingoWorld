@@ -40,6 +40,13 @@ export class NavbarComponent {
   NavigateToVocabulary() {
     this.router.navigate(['/my-vocabulary']);
   }
+
+  NavigateToProgres() {
+    this.router.navigate(['/progress']); //TODO
+  }
+  NavigateToSettings() {
+    this.router.navigate(['/settings']); //TODO
+  }
   
   get targetLanguage() {
     return this.authService.targetLanguage();

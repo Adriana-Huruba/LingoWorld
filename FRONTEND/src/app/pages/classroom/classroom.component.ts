@@ -8,6 +8,7 @@ import { CommonModule } from '@angular/common';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { FormsModule } from '@angular/forms';
 import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
+import { NzMessageService } from 'ng-zorro-antd/message';
 
 @Component({
   selector: 'app-classroom',
@@ -21,11 +22,14 @@ export class ClassroomComponent implements OnInit {
   private classroomService = inject(ClassroomService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private message = inject(NzMessageService);
 
   students: any[] = [];
   classroomName = '';
   inviteCode = '';
   errorMessage = '';
+  selectedFile: File | null = null;
+  isDragging = false;
 
   activeTab: string = 'students';
 
@@ -78,10 +82,60 @@ export class ClassroomComponent implements OnInit {
     });
   }
 
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.validateAndSetFile(input.files[0]);
+      input.value = ''; 
+    }
+  }
+
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging = true;
+  }
+
+  onDragLeave(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging = false;
+  }
+
+  onDrop(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging = false;
+
+    if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
+      this.validateAndSetFile(event.dataTransfer.files[0]);
+    }
+  }
+
+  validateAndSetFile(file: File) {
+    if (file.type !== 'application/pdf') {
+      this.message.error('You can only upload files in PDF format!');
+      return;
+    }
+
+    const maxSizeInMB = 10; //limit 
+    if (file.size > maxSizeInMB * 1024 * 1024) {
+      this.message.warning(`The uploaded file is too big, the limit is ${maxSizeInMB}MB!`);
+      return;
+    }
+
+    this.selectedFile = file;
+    this.message.success(`File "${file.name}" selected`);
+  }
+
+  removeFile() {
+    this.selectedFile = null;
+  }
+  
   topic = '';
   numberOfExercises = 10;
   focus = 'grammar';
-  typesOfExercises: string[] = ['multiple_choice', 'fill-in-the-blank']; 
+  typesOfExercises: string[] = ['multiple_choice', 'fill-in-the-blank', 'translation', 'match']; 
   
   isGenerating = false;
   isGenerated = false; // 

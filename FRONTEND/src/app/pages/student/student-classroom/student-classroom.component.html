@@ -1,0 +1,41 @@
+<div class="classroom-header">
+    <button (click)="returnToDashboard()" class="button-icon">  
+        <nz-icon nzType="arrow-left" nzTheme="outline" />
+    </button>
+    <div class="classroom-details"> 
+        <h2>{{ classroomName }}</h2>
+        <span>
+            <nz-icon nzType="user" nzTheme="outline"/>
+            Teacher: {{ classroom.teacher_name }}
+        </span> 
+    </div>
+    
+    <p>Check your assignments and track your progress</p>
+</div>
+<div class="classroom-content">
+    <div class="moodle-box assignments-box">
+        <div class="moodle-box-header">
+            Assignments
+        </div>
+        <div class="moodle-box-content">
+            <p>Check what you have to do next</p>
+            <!-- @for(assignment of assignments; track assignment.id) 
+            {
+            <h3>Title {{assignment.title}}</h3>
+            <p>Due date: {{assignment.due_date}}</p>
+            <p>Start assignment:</p>
+            <--modal cu exercitiile efective
+            }-->
+            </div>
+    </div>
+
+    <div class="moodle-box ranking-box">
+        <div class="moodle-box-header">
+            Ranking
+        </div>
+        <div class="moodle-box-content">
+            <p>See what your colleagues do</p>
+            
+        </div>
+    </div>
+</div>

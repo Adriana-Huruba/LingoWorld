@@ -5,15 +5,27 @@
     @if(authService.userRole() === "student") {
         <app-student-dashboard></app-student-dashboard>
     }   
-    @if(authService.userRole() === "adult-learner") {
-        <p> What would you like to learn today?</p>
+    @if(authService.userRole() === "adult_learner") {
+        <p> What would you like to learn about today?</p>
+        <h3>Available topics:</h3>
+        <div class="topics-grid">
+            @for(topic of topics; track topic)
+            {
+                <button nz-button nzType="default" class="topic-btn">
+                    {{ topic }}
+                </button>
+            }
+            @empty {
+                <p class="empty-topics">No topics available yet.</p>
+            }
+        </div>
         <h3>Types of exercises:</h3>
         <div class="exercises">
             <button>Translation</button>
             <button>Vocabulary</button>
-            <button>Writing</button>
             <button>Grammar</button>
-            <button (click)="redirectToVoiceAssistant()" class="redirect-assistant">Pronunciation</button>
+            <!-- <button>Writing</button> -->
+            <!-- <button (click)="redirectToVoiceAssistant()" class="redirect-assistant">Pronunciation</button> -->
         </div>
     }
 </div>

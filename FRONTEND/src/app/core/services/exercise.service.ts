@@ -38,4 +38,8 @@ export class ExerciseService {
   submitAnswer(payload: {user_id: number; exercise_id: number; is_correct: boolean; response_time_seconds: number; exercise_type: string; used_hint: boolean;}) {
     return this.http.post<any>(`${this.apiUrl}/submit-answer`, payload);
   }
+
+  getTopics() {
+    return this.http.get<string[]>(`${this.apiUrl}/alltopics`);
+  }
 }

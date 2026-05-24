@@ -167,3 +167,14 @@ class ExerciseDAO:
             conn.rollback()
             print(f"[ExerciseDAO.save_initial_quiz_result] {e}")
             return False
+        
+    @staticmethod
+    def get_all_topics(conn) -> list[str]:
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT * FROM get_all_topics();")
+                rows = cur.fetchall()
+                return [row[0] for row in rows]
+        except Exception as e:
+            print(f"[ExerciseDAO.get_all_topics] {e}")
+            return []

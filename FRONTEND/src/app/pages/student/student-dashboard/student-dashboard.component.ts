@@ -1,13 +1,14 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzMessageService } from 'ng-zorro-antd/message';
-import { AuthService } from '../../core/services/auth.service';
-import { ClassroomService } from '../../core/services/classroom.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { ClassroomService } from '../../../core/services/classroom.service';
 
 @Component({
   selector: 'app-student-dashboard',
@@ -18,9 +19,10 @@ import { ClassroomService } from '../../core/services/classroom.service';
 export class StudentDashboardComponent {
   private authService = inject(AuthService);
   private classroomService = inject(ClassroomService);
-  private message= inject(NzMessageService);
+  private message = inject(NzMessageService);
+  private router = inject(Router);
 
-  student=this.authService.currentUser;
+  student = this.authService.currentUser;
   classrooms: any[] = [];
   
   searchText = '';
@@ -78,5 +80,6 @@ export class StudentDashboardComponent {
 
   navigateToClassroom(id: number): void {
     console.log('Navigation to course:', id);
+    this.router.navigate(['/class', id]);
   }
 }

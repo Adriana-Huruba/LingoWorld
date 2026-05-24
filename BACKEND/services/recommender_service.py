@@ -4,9 +4,7 @@ from typing import Optional
 
 from dao.exercise_dao import ExerciseDAO
 from repository.exercise_repository import ExerciseRepository
-from core.embeddings import create_embedding
-from services.vector_service import search_for_recommender
-from services import llm_service
+from services.agent_service import run_exercise_agent
 
 """
 Recommender system using ELO Rating, ZPD(Zone of Proximal Development) and Spaced Repetition (SM-2)
@@ -14,11 +12,11 @@ Recommender system using ELO Rating, ZPD(Zone of Proximal Development) and Space
 
 CEFR_TO_ELO: dict[str, int] = {
     "A1": 200, 
-    "A2": 450, 
+    "A2": 500, 
     "B1": 700,
     "B2": 900,
     "C1": 1100,
-    "C2": 1300
+    "C2": 1400
 }
  
 CEFR_LEVELS: dict[str, tuple[int, int]] = {
@@ -136,72 +134,54 @@ def calculate_next_review_sm2(is_correct, used_hint, response_time, exercise_typ
 def _find_exercise_in_db(user_id, user_elo, target_levels, language, skill_type, topic, conn):
     exercise = ExerciseRepository.find_spaced_repetition( user_id, user_elo, target_levels, language, skill_type, topic, conn)
     if exercise:
+        print(f"[RS] branch: spaced_repetition")
         return exercise
- 
+
     exercise = ExerciseRepository.find_new(user_id, user_elo, target_levels, language, skill_type, topic, conn)
     if exercise:
+        print(f"[RS] branch: find_new")
         return exercise
- 
-    return ExerciseRepository.find_reinforcement(user_id, user_elo, target_levels, language, skill_type, topic, conn)
- 
+
+    return None 
+
 # rs
 def get_next_exercise(user_id: int, target_language: str, conn, skill_type: Optional[str] = None, topic: Optional[str] = None):
     user = ExerciseDAO.get_user_for_rs(user_id, conn)
     if not user:
+        print(f"[RS] user_id={user_id} does not exist in db or did not complete the quiz")
         return None
- 
+
     user_elo = user["elo_score"]
     total_responses = user["total_responses"]
- 
-    target_levels = get_target_levels(user_elo) # calc target levels with ZPD
- 
-    exercise = _find_exercise_in_db(user_id, user_elo, target_levels, target_language, skill_type, topic, conn) # search in db
+    target_levels = get_target_levels(user_elo)
+    primary_level = elo_to_cefr(user_elo)
+
+    exercise = _find_exercise_in_db(user_id, user_elo, target_levels, target_language, skill_type, topic, conn)
     if exercise:
         return exercise.to_dict() if hasattr(exercise, "to_dict") else exercise
- 
-    # fallback QDrant +llm
-    return _generate_from_qdrant(user_elo, target_levels, target_language, skill_type, topic, conn)
- 
-def _generate_from_qdrant(user_elo, target_levels, language, skill_type, topic, conn):
 
-    primary_level = elo_to_cefr(user_elo)
-    query_text = f"{language} {primary_level} {skill_type or ''} {topic or ''}".strip()
-    query_vector = create_embedding(query_text)
- 
-    chunks = search_for_recommender(vector=query_vector, language=language, levels=target_levels, skill_type=skill_type, topic=topic, limit=5)
-    if not chunks:
-        return None
- 
-    payload = chunks[0].payload
-    chunk_level = payload.get("level", primary_level)
-    chunk_skill = payload.get("skill_type", "general")
-    chunk_topic = payload.get("topic", "general")
-    chunk_source = payload.get("source", "")
- 
-    raw = llm_service.generate_exercises(context_chunks=chunks, topic=chunk_topic, level=chunk_level, type="multiple-choice", language=language,)
- 
-    try:
-        content = json.loads(raw)
-    except json.JSONDecodeError:
-        return None
- 
-    questions = content.get("questions", [])
-    correct_ans = questions[0]["answer"] if questions else ""
-    item_elo = cefr_to_elo(chunk_level)
- 
-    exercise_id = ExerciseRepository.save( language=language, level=chunk_level, exercise_type="multiple-choice", category=chunk_skill, topic=chunk_topic, content=content, correct_answer=correct_ans, elo_difficulty=item_elo, source_manual=chunk_source, conn=conn,)
- 
-    return {
-        "exercise_id": exercise_id,
-        "level": chunk_level,
-        "type": "multiple-choice",
-        "skill_type": chunk_skill,
-        "topic": chunk_topic,
-        "content": content,
-        "correct_answer": correct_ans,
-        "elo_difficulty": item_elo,
-        "reason": "newly_generated",
-    }
+    print(f"[RS] Agent is generating new ex")
+    result = run_exercise_agent(
+        user_id=user_id,
+        topic=topic or "general",
+        level=primary_level,
+        exercise_type="multiple-choice",
+        language=target_language,
+        skill_type=skill_type,
+        conn=conn,
+    )
+    if result:
+        result["reason"] = "newly_generated"
+        print(f"[RS] Agent generated new ex with id={result.get('exercise_id')}")
+        return result
+
+    print(f"[RS] Agent failed - reinforcement from DB")
+    exercise = ExerciseRepository.find_reinforcement(user_id, user_elo, target_levels, target_language, skill_type, topic, conn)
+    if exercise:
+        return exercise.to_dict() if hasattr(exercise, "to_dict") else exercise
+
+    print(f"[RS] No ex available")
+    return None
  
  
 def record_answer(user_id: int, exercise_id: int,  is_correct: bool, response_time_seconds: int, exercise_type: str, used_hint: bool, conn, assignment_id: Optional[int] = None,) -> dict:

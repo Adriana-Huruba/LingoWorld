@@ -36,3 +36,7 @@ class ExerciseRepository:
         return ExerciseDAO.insert_exercise(
             language, level, exercise_type, category, topic,
             content, correct_answer, elo_difficulty, source_manual, conn)
+    
+    @staticmethod
+    def get_all_topics(conn) -> list[str]:
+        return ExerciseDAO.get_all_topics(conn)

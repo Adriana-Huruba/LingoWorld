@@ -1,14 +1,13 @@
-from ast import If
 import os
 import shutil
 
 from typing import Optional
-from fastapi import APIRouter, Depends, File, Form,  HTTPException, UploadFile
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
+from pydantic import BaseModel
 
 from core.database import get_db
 from core.ingest_pdf import run_ingestion
-from services.exercise_service import get_or_generate_exercise
+from services.exercise_service import get_or_generate_exercise, get_all_topics
 from services.initial_quiz_service import get_quiz_exercises, submit_quiz_results, has_completed_quiz
 from services.recommender_service import get_next_exercise, record_answer
 
@@ -20,6 +19,7 @@ class ExerciseRequest(BaseModel):
     level: str = "B2"
     type: str = "multiple-choice" # implicit, if not specified
     language: str = "english" # implicit, if not specified 
+    native_language: str = "romanian" # implicit
     skill_type: Optional[str] = None
 
 class NextExerciseRequest(BaseModel):
@@ -33,7 +33,7 @@ class SubmitAnswerRequest(BaseModel):
     exercise_id: int
     is_correct: bool
     response_time_seconds: int
-    exercise_type: str # multiple-choice, fill-in-the-blank, translation
+    exercise_type: str # multiple-choice, fill-in-the-blank, translation, match
     used_hint: bool = False
     assignment_id: Optional[int] = None
 
@@ -43,9 +43,9 @@ class InitialQuizSubmitRequest(BaseModel):
     responses: list[dict] # exercise_id, is_correct, response_time, exercise_type, used_hint
 
 @exercises_router.post("/generate-exercise")
-async def get_exercise(request: ExerciseRequest, conn=Depends(get_db)):
+async def get_exercise(request: ExerciseRequest, conn=Depends(get_db)):  #TODO - sa caut si dupa continut
     """
-    1. Searching in postgreSQL for relevant exercises based on the topic, language and level. 
+    1. Searching in postgreSQL for relevant exercises based on the topic, language and level.
     2. If not found, searching in qdrant for relevant chunks from the textbooks, then sending them to LLM to generate the exercise.
     """
     
@@ -57,6 +57,7 @@ async def get_exercise(request: ExerciseRequest, conn=Depends(get_db)):
             language=request.language,
             exercise_type=request.type,
             skill_type=request.skill_type,
+            native_language=request.native_language,
             conn=conn,
         )
         if not exercise:
@@ -140,20 +141,36 @@ async def submit_initial_quiz(request: InitialQuizSubmitRequest, conn = Depends(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
+def _ingest_and_cleanup(temp_path: str, language: str, level: str, uploaded_by_user_id: Optional[int]):
+    try:
+        run_ingestion(pdf_path=temp_path, language=language, level=level, uploaded_by_user=uploaded_by_user_id)
+    except Exception as e:
+        print(f"[upload-manual] Ingestion background error '{temp_path}': {e}")
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+
 @exercises_router.post("/upload-manual")
-async def upload_manual(language: str = Form(...), level: str = Form(...), file: UploadFile = File(...), uploaded_by_user_id: Optional[int] = Form(None)):
+async def upload_manual(background_tasks: BackgroundTasks, language: str = Form(...), level: str = Form(...), file: UploadFile = File(...), uploaded_by_user_id: Optional[int] = Form(None)):
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted!")
 
     temp_path = f"temp_{file.filename}"
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-    
+
+    background_tasks.add_task(_ingest_and_cleanup, temp_path, language, level, uploaded_by_user_id)
+
+    return {
+        "message": f"File '{file.filename}' uploaded successfully. Ingestion started in background for {language} {level}.",
+        "status": "processing",
+    }
+
+@exercises_router.get("/alltopics")
+async def get_topics(conn=Depends(get_db)):
     try:
-        run_ingestion(pdf_path=temp_path, language=language, level=level, uploaded_by_user=uploaded_by_user_id)
-        return {"message": f"File {file.filename} uploaded for {language} {level}"}
+        topics = get_all_topics(conn=conn)
+        return topics
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)

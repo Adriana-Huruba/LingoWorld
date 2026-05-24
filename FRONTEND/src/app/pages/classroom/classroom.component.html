@@ -81,11 +81,23 @@
                     </div>
                 </div>
 
-                <div class="upload-zone">
-                    <nz-icon nzType="cloud-upload" nzTheme="outline" class="upload-icon" />
+                <div class="upload-zone" [class.drag-over]="isDragging" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
+                    <nz-icon nzType="cloud-upload" nzTheme="outline" class="upload-icon"/>
                     <h4>Drag and drop your PDF textbook here</h4>
                     <p>or click to browse from your computer</p>
-                    <button nz-button nzType="default">Browse files</button>
+
+                    <input type="file" #fileInput accept=".pdf" style="display: none;" (change)="onFileSelected($event)">
+                    <button nz-button nzType="default" (click)="fileInput.click()">Browse files</button>
+
+                    @if (selectedFile) {
+                        <div class="selected-file">
+                            <nz-icon nzType="file-pdf" nzTheme="outline" class="pdf-icon"  />
+                            <strong>{{ selectedFile.name }}</strong>
+                            <button nz-button nzType="text" nzDanger nzSize="small" (click)="removeFile()">
+                                <nz-icon nzType="delete" /> 
+                            </button>
+                        </div>
+                    }
                 </div>
 
                 <div class="generation-filters">

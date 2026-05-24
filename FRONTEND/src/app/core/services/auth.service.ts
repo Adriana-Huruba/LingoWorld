@@ -3,7 +3,7 @@ import { Injectable, signal, computed } from '@angular/core';
 import { Observable } from 'rxjs/internal/Observable';
 import {User} from '../interfaces/user.interface';
 
-export type UserRole = 'student' | 'teacher' | 'adult-learner' | null;
+export type UserRole = 'student' | 'teacher' | 'adult_learner' | null;
 
 @Injectable({ 
   providedIn: 'root'
