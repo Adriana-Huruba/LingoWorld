@@ -6,7 +6,20 @@
         <app-student-dashboard></app-student-dashboard>
     }   
     @if(authService.userRole() === "adult_learner") {
-        <p> What would you like to learn about today?</p>
+        <div class="welcome-section"> 
+            <div class="welcome-text">
+                <h2>What would you like to learn about today?</h2>
+                <p>Choose from your recommended topics below or generate a custom lesson</p>
+            </div>
+            
+            <div class="generator-card">
+                <p>Want something specific?</p>
+                <button class="btn-primary" (click)="redirectToGenerator()">
+                    Use the generator
+                </button>
+            </div>
+        </div>
+        <button class="daily-review">Daily review</button>
         <h3>Available topics:</h3>
         <div class="topics-grid">
             @for(topic of topics; track topic)
@@ -18,14 +31,7 @@
             @empty {
                 <p class="empty-topics">No topics available yet.</p>
             }
-        </div>
-        <h3>Types of exercises:</h3>
-        <div class="exercises">
-            <button>Translation</button>
-            <button>Vocabulary</button>
-            <button>Grammar</button>
-            <!-- <button>Writing</button> -->
-            <!-- <button (click)="redirectToVoiceAssistant()" class="redirect-assistant">Pronunciation</button> -->
+            
         </div>
     }
 </div>

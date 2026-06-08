@@ -2,7 +2,7 @@
 
 import os 
 from groq import Groq
-import google.generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,7 +11,7 @@ api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
   print("Error: GEMINI_API_KEY was not found in .env!")
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 

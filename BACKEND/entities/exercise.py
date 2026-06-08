@@ -17,6 +17,29 @@ class Exercise:
     reason: Optional[str] = None  # spaced_repetition/new_exercise/reinforcement/ newly_generated
 
     @staticmethod
+    def _normalize_content(content: dict, correct_answer: str = "") -> dict:
+        if not isinstance(content, dict):
+            return content
+
+        if "questions" in content:
+            return content
+
+        if "question" in content:
+            question = {
+                "question": content.get("question", ""),
+                "answer": content.get("answer", correct_answer),
+                "options": content.get("options", []) or [],
+            }
+            normalized = {
+                "exercise_title": content.get("exercise_title", ""),
+                "questions": [question],
+            }
+            if "base_sentence" in content:
+                normalized["base_sentence"] = content["base_sentence"]
+            return normalized
+
+        return content
+
     def from_row(row: dict) -> "Exercise":
         return Exercise(
             exercise_id = row["exercise_id"],
@@ -25,7 +48,7 @@ class Exercise:
             type = row["type"],
             category = row.get("category", "general"),
             topic = row.get("topic"),
-            content = row["content"],
+            content = Exercise._normalize_content(row["content"], row.get("correct_answer", "")),
             correct_answer = row["correct_answer"],
             elo_difficulty = row.get("elo_difficulty"),
             source_manual = row.get("source_manual"),
@@ -41,7 +64,7 @@ class Exercise:
             "type": self.type,
             "skill_type": self.category,
             "topic": self.topic,
-            "content": self.content,
+            "content": Exercise._normalize_content(self.content, self.correct_answer),
             "correct_answer": self.correct_answer,
             "elo_difficulty": self.elo_difficulty,
             "source_manual": self.source_manual,

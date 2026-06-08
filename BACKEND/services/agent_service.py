@@ -6,7 +6,8 @@ from typing import Optional, TypedDict
 from spylls.hunspell import Dictionary
 from langgraph.graph import StateGraph, END
 from langgraph.graph.state import CompiledStateGraph
-import google.generativeai as genai
+
+from google import genai
 from dotenv import load_dotenv
 
 from core.embeddings import create_embedding
@@ -15,7 +16,7 @@ from dao.exercise_dao import ExerciseDAO
 
 
 load_dotenv()
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 
 DICT_PATH = os.path.join(os.path.dirname(__file__), "../data/dicts")
@@ -66,7 +67,6 @@ def _build_multiple_choice_prompt(state: ExerciseAgentState, whole_context: str)
     native = state.get("native_language", "romanian")
 
     return f"""
-    You are a language teacher creating materials for a {state['level']} level student learning {state['language']}.
     The topic the student is learning about is: {state['topic']}.
     Context from textbook:
     {whole_context}
@@ -84,11 +84,11 @@ def _build_multiple_choice_prompt(state: ExerciseAgentState, whole_context: str)
     8. The 'options' **MUST** be a **LIST** of *distractors(strings)* with a **SINGLE** right answer.
     9. The 'answer' **MUST** be the missing word that fits the sentence and it **MUST** be found in the list of options.
     
-    Here are is an example:
+    *Here is an example of how the output structure and content should look like*:
     Output:
     {{
       "exercise_title": "Choose the correct word",
-      "base_sentence": "Every morning, I ___ my teeth.",
+      "base_sentence": "Every morning, I brush my teeth.",
       "question": "Every morning, I ___ my teeth.",
       "options": ["brush", "brushes", "brushing", "brushed"],
       "answer": "brush"
@@ -96,15 +96,14 @@ def _build_multiple_choice_prompt(state: ExerciseAgentState, whole_context: str)
     """
 
 
-def _build_gap_fill_prompt(state: ExerciseAgentState, whole_context: str) -> str:
+def _build_fill_in_the_blank_prompt(state: ExerciseAgentState, whole_context: str) -> str:
     native = state.get("native_language", "romanian")
     return f"""
-    You are a language teacher creating materials for a {state['level']} level student learning {state['language']}.
     The topic the student is learning about is: {state['topic']}.
     Context from textbook:
     {whole_context}
     
-    Task: Create ONE gap-fill (fill-in-the-blank) question testing '{state['topic']}'.
+    Task: Create ONE fill-in-the-blank question testing '{state['topic']}'.
     
     GUARDRAILS (STRICT RULES):
     1. NO TRIVIA: Sentence **MUST** be standalone without the need of more context to be understood. No references to any text.
@@ -115,7 +114,7 @@ def _build_gap_fill_prompt(state: ExerciseAgentState, whole_context: str) -> str
     5. The 'question' **MUST** be the sentence with a missing word that the user has to fill in.
     6. The 'answer' **MUST** be the missing word.
     
-    Here are are some examples:
+    *Here is are some examples of how the output structure and content should look like*:
     1. Output:
     {{
       "exercise_title": "Fill in the blank with the right verb conjugation",
@@ -136,8 +135,6 @@ def _build_gap_fill_prompt(state: ExerciseAgentState, whole_context: str) -> str
 def _build_translation_prompt(state: ExerciseAgentState, whole_context: str) -> str:
     native = state.get("native_language", "romanian")
     return f"""
-    You are a language teacher creating materials for a {state['level']} level student learning {state['language']}.
-    
     Context from textbook:
     {whole_context}
     
@@ -161,7 +158,6 @@ def _build_translation_prompt(state: ExerciseAgentState, whole_context: str) -> 
 def _build_match_prompt(state: ExerciseAgentState, whole_context: str) -> str:
     native = state.get("native_language", "romanian")
     return f"""
-    You are a language teacher creating materials for a {state['level']} level student learning {state['language']}.
     The topic is {state['topic']}.
     Context from textbook:
     {whole_context}
@@ -237,24 +233,29 @@ def fetch_context_node(state: ExerciseAgentState) -> ExerciseAgentState:
 def generate_node(state: ExerciseAgentState) -> ExerciseAgentState:
     chunks = state["context_chunks"]
     whole_context = "\n---\n".join([c.payload["text"] for c in chunks])
+    system_prompt=f" You are a language teacher creating materials for a {state['level']} level student learning {state['language']}."
 
     if state["exercise_type"] == "multiple-choice":
         prompt = _build_multiple_choice_prompt(state, whole_context)
-    elif state["exercise_type"] == "gap_fill":
-        prompt = _build_gap_fill_prompt(state, whole_context)
+    elif state["exercise_type"] == "fill-in-the-blank":
+        prompt = _build_fill_in_the_blank_prompt(state, whole_context)
     elif state["exercise_type"] == "match":
         prompt = _build_match_prompt(state, whole_context)
     elif state["exercise_type"] == "translation":
         prompt = _build_translation_prompt(state, whole_context)
     else:
-        prompt = _build_gap_fill_prompt(state, whole_context) # fallback
+        prompt = _build_fill_in_the_blank_prompt(state, whole_context) # fallback
 
     if state["retry_count"] > 0 and state["validation_errors"]:
         prompt += "\n ATTENTION! You made mistakes in the previous generation. Please correct them:\n"
         for err in state["validation_errors"]:
             prompt += f"- {err}\n"
 
-    model = genai.GenerativeModel("gemini-2.5-flash", generation_config={"response_mime_type": "application/json"})
+    model = genai.GenerativeModel(
+        "gemini-2.5-flash", 
+        system_instruction=system_prompt,
+        config={"response_mime_type": "application/json"}
+    )
     response = model.generate_content(prompt)
 
     return {**state, "raw_json": response.text.strip()}

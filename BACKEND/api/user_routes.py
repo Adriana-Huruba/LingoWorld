@@ -90,4 +90,9 @@ async def enroll_student(data: EnrollStudent):
 async def get_student_classrooms(student_id: int):
     classrooms = ClassroomService.get_student_classrooms(student_id)
     return {"classrooms": classrooms}
+
+@classroom_router.get('/{classroom_id}/assignments')
+async def get_classroom_assignments(classroom_id: int):
+    assignments = ClassroomService.get_classroom_assignments(classroom_id)
+    return {"assignments": assignments}
     

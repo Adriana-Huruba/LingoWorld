@@ -1,0 +1,84 @@
+<div class="modal-overlay" (click)="close()">
+    <div class="modal-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <div>
+                <h3>{{ title }}</h3>
+                <span class="modal-progress-label">
+                    Question {{ currentQuestionIndex + 1 }} of {{ totalQuestions }}
+                </span>
+            </div>
+            <button class="btn-close" (click)="close()">
+                <nz-icon nzType="close" nzTheme="outline" />
+            </button>
+        </div>
+
+        <div class="progress-bar-track">
+            <div class="progress-bar-fill" [style.width.%]="progressPercent"></div>
+        </div>
+
+        @if (sessionFinished) {
+            <div class="session-result">
+                <nz-icon nzType="trophy" nzTheme="outline" class="trophy-icon" />
+                <h3>Assignment complete!</h3>
+                <p class="score-text">You scored <strong>{{ score }} / {{ totalQuestions }}</strong></p>
+
+                @if (score === totalQuestions) {
+                    <p class="score-message perfect">Perfect score! Excellent work</p>
+                } @else if (score >= totalQuestions / 2) {
+                    <p class="score-message good">Good job! Keep practicing</p>
+                } @else {
+                    <p class="score-message low">Keep it up — review the material and try again</p>
+                }
+                <button class="btn-primary" (click)="close()">Back to classroom</button>
+            </div>
+
+        } @else if (currentQuestion) {
+            <div class="question-block">
+                <p class="question-text">{{ currentQuestion.question }}</p>
+                <div class="options-list">
+                    @for (option of currentQuestion.options; track option; let i = $index) {
+                        <button class="option-btn"
+                            [class.selected]="selectedOption === option && !answered"
+                            [class.correct]="answered && option === currentQuestion.answer"
+                            [class.wrong]="answered && selectedOption === option && option !== currentQuestion.answer"
+                            [disabled]="answered"
+                            (click)="selectOption(option)">
+                            <span class="option-label">{{ getOptionLabel(i) }}</span>
+                            {{ option }}
+                        </button>
+                    }
+                </div>
+
+                @if (answered) {
+                    <div class="answer-feedback" [class.feedback-correct]="isCorrect" [class.feedback-wrong]="!isCorrect">
+                        @if (isCorrect) {
+                            <nz-icon nzType="check-circle" nzTheme="outline" /> Correct!
+                        } @else {
+                            <nz-icon nzType="close-circle" nzTheme="outline" />
+                            Wrong. The correct answer is: <strong>{{ currentQuestion.answer }}</strong>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="modal-footer">
+                @if (!answered) {
+                    <button
+                        class="btn-primary"
+                        [disabled]="!selectedOption"
+                        (click)="confirmAnswer()">
+                        Confirm answer
+                    </button>
+                } @else {
+                    <button class="btn-primary" (click)="nextQuestion()">
+                        @if (currentQuestionIndex < totalQuestions - 1) {
+                            Next question
+                        } @else {
+                            Finish assignment
+                        }
+                    </button>
+                }
+            </div>
+        }
+    </div>
+</div>

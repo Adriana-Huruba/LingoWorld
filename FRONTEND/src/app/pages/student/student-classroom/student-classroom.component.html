@@ -1,41 +1,79 @@
 <div class="classroom-header">
-    <button (click)="returnToDashboard()" class="button-icon">  
+    <button (click)="returnToDashboard()" class="button-icon">
         <nz-icon nzType="arrow-left" nzTheme="outline" />
     </button>
-    <div class="classroom-details"> 
+    <div class="classroom-details">
         <h2>{{ classroomName }}</h2>
         <span>
             <nz-icon nzType="user" nzTheme="outline"/>
             Teacher: {{ classroom.teacher_name }}
-        </span> 
+        </span>
     </div>
-    
     <p>Check your assignments and track your progress</p>
 </div>
+
 <div class="classroom-content">
-    <div class="moodle-box assignments-box">
-        <div class="moodle-box-header">
-            Assignments
+    <div class="box assignments-box">
+        <div class="box-header">Assignments</div>
+        <div class="box-content">
+
+            @if (assignments.length === 0) {
+                <p class="empty-state">No assignments yet. Check back later!</p>
+            }
+
+            @for (assignment of assignments; track assignment.id) {
+                <div class="assignment-card" [class.completed-card]="assignment.status === 'completed'">
+                    <div class="assignment-card-top">
+                        <div class="assignment-meta">
+                            <span class="assignment-title">{{ assignment.title }}</span>
+                            <span class="status-badge" [ngClass]="getStatusClass(assignment.status)">
+                                {{ getStatusLabel(assignment.status) }}
+                            </span>
+                        </div>
+                        <div class="assignment-footer">
+                            <span class="due-date" [class.due-soon]="isDueSoon(assignment.due_date)">
+                                <nz-icon nzType="calendar" nzTheme="outline" />
+                                Due: {{ assignment.due_date }}
+                            </span>
+                            <span class="question-count">
+                                <nz-icon nzType="file-text" nzTheme="outline" />
+                                {{ assignment.questions.length }} questions
+                            </span>
+                        </div>
+                    </div>
+                    <button
+                        class="btn-start"
+                        [disabled]="assignment.status === 'completed'"
+                        (click)="startAssignment(assignment)">
+                        @if (assignment.status === 'completed') {
+                            <nz-icon nzType="check-circle" nzTheme="outline" /> Completed
+                        } @else if (assignment.status === 'in-progress') {
+                            <nz-icon nzType="play-circle" nzTheme="outline" /> Resume
+                        } @else {
+                            <nz-icon nzType="right-circle" nzTheme="outline" /> Start
+                        }
+                    </button>
+                </div>
+            }
+
         </div>
-        <div class="moodle-box-content">
-            <p>Check what you have to do next</p>
-            <!-- @for(assignment of assignments; track assignment.id) 
-            {
-            <h3>Title {{assignment.title}}</h3>
-            <p>Due date: {{assignment.due_date}}</p>
-            <p>Start assignment:</p>
-            <--modal cu exercitiile efective
-            }-->
-            </div>
     </div>
 
-    <div class="moodle-box ranking-box">
-        <div class="moodle-box-header">
-            Ranking
-        </div>
-        <div class="moodle-box-content">
+    <div class="box ranking-box">
+        <div class="box-header">Ranking</div>
+        <div class="box-content">
             <p>See what your colleagues do</p>
-            
         </div>
     </div>
+
 </div>
+
+@if (showModal && activeAssignment) {
+    <app-universal-player
+        [mode]="QuizMode.TEACHER_ASSIGNMENT"
+        [title]="activeAssignment.title"
+        [preloadedExercises]="activeAssignment.questions"
+        (closed)="closeModal()"
+        (completed)="onAssignmentCompleted($event)">
+    </app-universal-player>
+}

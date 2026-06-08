@@ -76,7 +76,7 @@
             </div>
           }
   
-          @if (currentExercise.type === 'gap_fill' || currentExercise.type === 'translation') 
+          @if (currentExercise.type === 'fill-in-the-blank' || currentExercise.type === 'translation') 
           {
             <input type="text" class="text-input" [(ngModel)]="textAnswer" (keydown.enter)="canSubmit && confirmAnswer()" placeholder="Your answer..."/>
           }

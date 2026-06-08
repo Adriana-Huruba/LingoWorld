@@ -51,4 +51,12 @@ export class ClassroomService {
   getStudentClassrooms(studentId: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/student-classes/${studentId}`);
   }
+
+  getClassroomAssignments(classroomId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/${classroomId}/assignments`);
+  }
+
+  getAssignmentById(assignmentId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/assignments/${assignmentId}`);
+  }
 }

@@ -34,7 +34,7 @@ ELO_K_NEW = 32  # K-factor for new users(quiz < 20 questions)
 ELO_K_STABLE = 16   # K-factor after stabilization
 EXPECTED_TIME_PER_TYPE = {
     "multiple-choice": 8,
-    "gap_fill": 20,
+    "fill-in-the-blank": 20,
     "translation": 35,
 }
   
@@ -63,17 +63,17 @@ def cefr_to_elo(level):
 #  ZPD
 def get_target_levels(user_elo):
     current_level = elo_to_cefr(user_elo)
-    idx = CEFR_ORDER.index(current_level)
+    index = CEFR_ORDER.index(current_level)
     low, high = CEFR_LEVELS[current_level]
  
     position = (user_elo - low) / (high - low) if high > low else 0.5
     levels   = [current_level]
 
-    if position >= 0.80 and idx < len(CEFR_ORDER) - 1:
-        levels.append(CEFR_ORDER[idx + 1])
+    if position >= 0.80 and index < len(CEFR_ORDER) - 1:
+        levels.append(CEFR_ORDER[index + 1])
  
-    if position <= 0.20 and idx > 0:
-        levels.append(CEFR_ORDER[idx - 1])
+    if position <= 0.20 and index > 0:
+        levels.append(CEFR_ORDER[index - 1])
  
     return levels
  
@@ -112,6 +112,7 @@ def estimate_quality(is_correct, used_hint, response_time, exercise_type) -> int
     return 2                    
 
 def calculate_next_review_sm2(is_correct, used_hint, response_time, exercise_type, consecutive_correct, easiness_factor, last_interval):
+    """SM-2: returns next_review_date, new_ef, new_interval, quality response"""
     q = estimate_quality(is_correct, used_hint, response_time, exercise_type)
 
     if q < 3:

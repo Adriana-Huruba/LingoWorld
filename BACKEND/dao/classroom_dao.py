@@ -94,3 +94,37 @@ class ClassroomDAO:
         finally:
             cur.close()
             conn.close()
+
+    @staticmethod
+    def get_classroom_assignments(classroom_id):
+        conn = get_db_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute("SELECT * FROM  get_classroom_assignments(%s)", (classroom_id,))
+            rows = cur.fetchall()
+
+            worksheets = {}
+            for row in rows:
+                worksheet_id = row[0]
+                if  worksheet_id not in worksheets:
+                    worksheets[ worksheet_id] = {
+                        "id": worksheet_id, "title": row[1],
+                        "due_date": row[2].isoformat() if row[2] else None,
+                        "status": row[3] or "pending",
+                        "questions": []
+                    }
+                content = row[5]
+                q = content.get("questions", [{}])[0] if content else {}
+                worksheets[worksheet_id]["questions"].append({
+                    "question": q.get("question", ""),
+                    "options": q.get("options", []),
+                    "answer": row[6]
+                })
+            
+            return list(worksheets.values())
+        except Exception as e:
+            print(f"DAO get_classroom_assignments error: {e}")
+            return []
+        finally:
+            cur.close()
+            conn.close()

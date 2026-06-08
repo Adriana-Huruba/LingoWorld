@@ -31,22 +31,37 @@
       
       <div class="question-box">
         <p class="question-text">
-          <strong>Exercise:</strong> {{ receivedExercise.content.questions[0].question }}
+          <strong>Exercise:</strong> {{ currentQuestion?.question || receivedExercise.content.exercise_title }}
         </p>
 
-        <div class="options-container">
-          @for (option of receivedExercise.content.questions[0].options; track option) {
-            <label class="option-label" 
-              [ngClass]="{
-               'selected': selectedOption === option && isAnswerCorrect === null,
-               'correct-option': isAnswerCorrect !== null && option === receivedExercise.correct_answer,
-               'wrong-option': isAnswerCorrect === false && selectedOption === option
-              }">
-                <input type="radio" name="answerOption" [value]="option" [(ngModel)]="selectedOption" [disabled]="isAnswerCorrect !== null">
-                {{ option }}
-            </label>
-          }
-        </div>
+        @if(receivedExercise.type === 'multiple-choice' && currentQuestion?.options?.length)
+        {
+          <div class="options-container">
+            @for (option of currentQuestion.options; track option) {
+              <label class="option-label" 
+                [ngClass]="{
+                 'selected': selectedOption === option && isAnswerCorrect === null,
+                 'correct-option': isAnswerCorrect !== null && option === receivedExercise.correct_answer,
+                 'wrong-option': isAnswerCorrect === false && selectedOption === option
+                }">
+                  <input type="radio" name="answerOption" [value]="option" [(ngModel)]="selectedOption" [disabled]="isAnswerCorrect !== null">
+                  {{ option }}
+              </label>
+            }
+          </div>
+        }
+        @else if(receivedExercise.type === 'fill-in-the-blank' || receivedExercise.type === 'translation')
+        {
+          <div class="text-answer-container">
+            <input type="text" class="text-input" [(ngModel)]="selectedOption" [disabled]="isAnswerCorrect !== null" placeholder="Type your answer here" />
+          </div>
+        }
+        @else
+        {
+          <div class="text-answer-container">
+            <input type="text" class="text-input" [(ngModel)]="selectedOption" [disabled]="isAnswerCorrect !== null" placeholder="Type your answer here" />
+          </div>
+        }
       </div>
 
       @if(submitMessage) 

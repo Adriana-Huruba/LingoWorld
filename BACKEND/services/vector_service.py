@@ -1,6 +1,6 @@
 import os
 from qdrant_client import QdrantClient
-from qdrant_client.models import Filter, FieldCondition, MatchAny, MatchValue, PayloadSchemaType, PointStruct, VectorParams, Distance
+from qdrant_client.models import Filter, FieldCondition, MatchAny, MatchValue, PayloadSchemaType, PointStruct, VectorParams, Distance, Range
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -23,7 +23,7 @@ def ensure_collection_exists():
             vectors_config=VectorParams(size=384, distance=Distance.COSINE),
         )
         
-        # index for faster filtering (Corectat: create_payload_index)
+        # index for faster filtering
         for field in ["language", "level", "skill_type", "topic", "source"]:
             client.create_payload_index(
                 collection_name=COLLECTION_NAME,
@@ -117,3 +117,71 @@ def search_for_recommender(vector, language, levels=None, skill_type=None, topic
     ).points
 
     return results
+
+
+# for teachers
+TEACHER_COLLECTION_NAME = "teacher_manual_chunks"
+
+
+def ensure_teacher_collection_exists():
+    collections = client.get_collections().collections
+    if not any(c.name == TEACHER_COLLECTION_NAME for c in collections):
+        client.create_collection(
+            collection_name=TEACHER_COLLECTION_NAME,
+            vectors_config=VectorParams(size=384, distance=Distance.COSINE),
+        )
+        for field, schema in [
+            ("manual_id", PayloadSchemaType.INTEGER),
+            ("teacher_id", PayloadSchemaType.INTEGER),
+            ("page", PayloadSchemaType.INTEGER),
+            ("chapter", PayloadSchemaType.KEYWORD),
+        ]:
+            client.create_payload_index(
+                collection_name=TEACHER_COLLECTION_NAME,
+                field_name=field,
+                field_schema=schema,
+            )
+
+
+def store_teacher_embeddings_batch(points: list[PointStruct]):
+    ensure_teacher_collection_exists()
+    client.upsert(collection_name=TEACHER_COLLECTION_NAME, points=points)
+
+
+def search_teacher_material(vector, manual_id, page_range = None, chapter= None, limit= 20):
+    ensure_teacher_collection_exists()
+    must_conditions = [
+        FieldCondition(key="manual_id", match=MatchValue(value=manual_id))
+    ]
+
+    if page_range:
+        must_conditions.append(
+            FieldCondition(key="page", range=Range(gte=page_range[0], lte=page_range[1]))
+        )
+
+    if chapter:
+        must_conditions.append(
+            FieldCondition(key="chapter", match=MatchValue(value=chapter))
+        )
+
+    vector_list = vector.tolist() if hasattr(vector, "tolist") else vector
+    results = client.query_points(
+        collection_name=TEACHER_COLLECTION_NAME,
+        query=vector_list,
+        query_filter=Filter(must=must_conditions),
+        limit=limit,
+    ).points
+
+    for i, hit in enumerate(results):
+        print(f"Chunk {i+1}: Score = {hit.score:.4f} | Text: {hit.payload['text'][:50]}...")
+    return results
+
+
+def delete_teacher_material_chunks(manual_id: int):
+    ensure_teacher_collection_exists()
+    client.delete(
+        collection_name=TEACHER_COLLECTION_NAME,
+        points_selector=Filter(
+            must=[FieldCondition(key="manual_id", match=MatchValue(value=manual_id))]
+        ),
+    )

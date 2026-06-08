@@ -1,5 +1,5 @@
 <div class="teacher-dashboard-container">
-    <h2>Welcome, Teacher!</h2>
+    <h2>Welcome, teacher {{teacher()?.name}}!</h2>
     <div class="search-bar">
         <input nz-input placeholder="Search for a class/student..." [(ngModel)]="searchText" (input)="filterText()" />
         <button> 

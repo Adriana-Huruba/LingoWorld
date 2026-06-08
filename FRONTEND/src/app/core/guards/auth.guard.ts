@@ -9,7 +9,6 @@ export const roleGuard: CanActivateFn = (route, state) => {
   if (!authService.isLoggedIn()) {
     return router.parseUrl('/login');
   }
-
   const allowedRoles = route.data['roles'] as Array<string>;
   const currentUserRole = authService.userRole();
 

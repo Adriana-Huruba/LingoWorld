@@ -44,6 +44,23 @@ export class GeneratorComponent {
 
   history: Array<{ exId: number; correct: boolean; oldElo: number; newElo: number; reason?: string }> = [];
 
+  get currentQuestion() {
+    if (!this.receivedExercise) {
+      return null;
+    }
+
+    const content: any = this.receivedExercise.content ?? {};
+    if (content.questions?.length) {
+      return content.questions[0];
+    }
+
+    return {
+      question: content.question ?? '',
+      options: content.options ?? [],
+      answer: content.answer ?? this.receivedExercise.correct_answer,
+    };
+  }
+
   constructor(private exerciseService: ExerciseService) {}
 
   generateNewExercise() {

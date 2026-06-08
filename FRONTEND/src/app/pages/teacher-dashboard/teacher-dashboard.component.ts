@@ -7,6 +7,8 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
+import { AuthService } from '../../core/services/auth.service';
+
 @Component({
   selector: 'app-teacher-dashboard',
   imports: [ NzModalModule, NzInputModule, NzButtonModule, FormsModule, NzIconModule],
@@ -15,6 +17,7 @@ import { Router } from '@angular/router';
 })
 
 export class TeacherDashboardComponent {
+  private authService = inject(AuthService);
   private classroomService = inject(ClassroomService);
   private router = inject(Router);
   
@@ -22,6 +25,7 @@ export class TeacherDashboardComponent {
   newClassName = '';
   classrooms: any[] = [];
   searchText: any;
+  teacher = this.authService.currentUser;
 
   ngOnInit() {
     this.loadClassrooms();

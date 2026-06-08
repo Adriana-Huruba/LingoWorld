@@ -5,6 +5,55 @@
     padding: 1rem;
 }
 
+.welcome-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f8fafc;
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+
+    h2{
+        color: #0f172a;
+        margin: 0 0 0.5rem 0;
+        font-size: 1.5rem;
+    }
+
+    p{
+        color: #64748b;
+        margin: 0;
+        font-size: 1rem;
+    }
+}
+
+.generator-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.8rem;
+}
+
+.daily-review{
+    font-size: 16px;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    border: none;
+    background-color: #cbeaee;
+    max-width: 10rem;
+    cursor: pointer;
+
+    &:hover {
+        transform: translateY(-4px) scale(1.02);
+        box-shadow: 0 15px 35px rgba(35, 9, 78, 0.5);
+        background: linear-gradient(135deg, #260563 0%, #4a4ed1 100%);
+        color: white;
+    &:active {
+        transform: translateY(0);
+    }
+}
+}
+
 .topics-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -44,26 +93,4 @@
 .empty-topics {
     color: #6b7280;
     font-size: 0.95rem;
-}
-
-.exercises{
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-left: 1rem;
-    padding: 1rem;
-
-    button{
-        font-size: 16px;
-        padding: 0.5rem 1rem;
-        border-radius: 10px;
-        border: none;
-        background-color: #cbeaee;
-        max-width: 10rem;
-        cursor: pointer;
-
-        &:hover{
-            background-color: rgb(255, 179, 204);
-        }
-    }
 }

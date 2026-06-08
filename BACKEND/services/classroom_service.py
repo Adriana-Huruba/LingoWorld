@@ -30,3 +30,7 @@ class ClassroomService:
         if not student_id:
             return []
         return ClassroomDAO.get_classrooms_by_student(student_id)
+    
+    @staticmethod
+    def get_classroom_assignments(classroom_id):
+        return ClassroomDAO.get_classroom_assignments(classroom_id)
