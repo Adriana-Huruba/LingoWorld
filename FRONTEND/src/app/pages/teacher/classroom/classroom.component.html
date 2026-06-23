@@ -1,0 +1,353 @@
+<div class="classroom-header">
+    <button (click)="returnToDashboard()" class="button-icon">  
+        <nz-icon nzType="arrow-left" nzTheme="outline" />
+    </button>
+    <div class="classroom-details"> 
+    <h2>{{ classroomName }}</h2>
+    
+    <div class="invite-badge" (click)="copyInviteCode()" nz-tooltip nzTooltipTitle="Click to copy code">
+        <span class="invite-label">Invite code:</span>
+        <strong class="invite-code">{{ inviteCode }}</strong>
+        <button class="button-icon copy-icon">
+            <nz-icon nzType="copy" nzTheme="outline" />
+        </button>
+    </div>
+</div>
+    
+    <p>Here you can see the recent activities of your students, such as completed exercises, quiz scores, and progress in their learning paths.</p>
+</div>
+<div class="classroom-content">
+    <aside class="sidebar">
+        <button [class.active]="activeTab === 'students'" (click)="setActiveTab('students')">
+            <nz-icon nzType="team" /> Students
+        </button>
+        <button [class.active]="activeTab === 'docs'" (click)="setActiveTab('docs')">
+            <nz-icon nzType="file-pdf" /> Generate resources
+        </button>
+        <button [class.active]="activeTab === 'assignments'" (click)="setActiveTab('assignments')">
+            <nz-icon nzType="profile" nzTheme="outline" /> Assignments
+        </button>
+        <button [class.active]="activeTab === 'settings'" (click)="setActiveTab('settings')">
+            <nz-icon nzType="setting" /> Settings
+        </button>
+    </aside>
+    
+    <main class="content">
+        @if (activeTab === 'students') 
+        {
+            <section>
+                <h3>Enrolled Students</h3>
+                <p>Manage your students and view their progress.</p>
+                <h3>Your students: </h3>
+                <div class="students-list">
+                @for(student of students; track student.id) {
+                    <div class="student-card">
+                        <img src="user-icon.svg" alt="Student Avatar" class="student-icon">
+                        <div class="student-card-content">
+                            <div class="student-info">
+                                <h3>{{ student.name }}</h3>
+                                <p>{{ student.email }}</p>
+                            </div>
+                            <div class="student-details">
+                                <span class="badge-elo"><nz-icon nzType="trophy" nzTheme="outline" /> {{ getProgressFor(student.id).elo_current ?? student.elo_score ?? '—' }} Elo</span>
+                                <span class="badge-xp"><nz-icon nzType="thunderbolt" nzTheme="outline" /> {{ getProgressFor(student.id).xp ?? student.xp ?? 0 }} XP</span>
+                                <span><img src="task-done.svg" alt="done svg" class="done-icon">{{ getProgressFor(student.id).assignments_done || 0 }} assignments done</span>
+                            </div>
+                        </div>
+                    </div>
+                }@empty {
+                    <p>No students enrolled yet</p>
+                }
+                </div>
+            </section>
+        }
+
+        @if (activeTab === 'assignments') {
+            <section class="tab-section">
+                <div class="section-header">
+                    <div>
+                        <h3>Class assignments</h3>
+                        <p>Here you can create and track homework or practice tests.</p>
+                    </div>
+                    <button nz-button nzType="primary" (click)="setActiveTab('docs')" class="create-assignment">
+                        <nz-icon nzType="plus" /> Create assignment
+                    </button>
+                </div>
+                
+                @if (assignments.length === 0) {
+                    <div class="empty-state">
+                        <nz-icon nzType="file-text" nzTheme="outline" />
+                        <p>No assignments created yet.</p>
+                    </div>
+                } @else {
+                    <div class="assignments-list">
+                        @for (assignment of assignments; track assignment.id) {
+                            <div class="teacher-assignment-card">
+                                <div class="assignment-info">
+                                    <h4>{{ assignment.title }}</h4>
+                                    <p>
+                                        <nz-icon nzType="calendar" nzTheme="outline" /> 
+                                        Due: {{ assignment.due_date ? (assignment.due_date | date:'medium') : 'No deadline' }}
+                                    </p>
+                                </div>
+                                
+                                <div class="assignment-actions">
+                                    <span class="questions-badge">
+                                        {{ assignment.questions?.length || 0 }} questions
+                                    </span>
+                                    <button nz-button nzType="default" nzShape="circle" nzTooltipTitle="View details" nz-tooltip (click)="viewAssignment()">
+                                        <nz-icon nzType="right" />
+                                    </button>
+                                </div> 
+                            </div>
+                        }
+                    </div>
+                }
+            </section>
+        }
+
+        @if (activeTab === 'docs') {
+            <section class="docs-section">
+                <div class="section-header">
+                    <div>
+                        <h3>AI document generator</h3>
+                        <!-- <p>Upload a textbook to automatically extract vocabulary and generate practice sheets.</p> -->
+                    </div>
+                </div>
+                <div class="docs-split-layout">
+                    <div class="source-column">
+                        <div class="existing-manual-zone">
+                            <h4><nz-icon nzType="book" nzTheme="outline" /> Select an already processed manual</h4>
+                            <nz-select nzPlaceHolder="Choose a textbook..." [ngModel]="manualId" (ngModelChange)="onExistingManualSelected($event)">
+                                @for(manual of existingManuals; track manual.manual_id) {
+                                    <nz-option [nzValue]="manual.manual_id" [nzLabel]="manual.title + ' (' + manual.level + ')'"></nz-option>
+                                }
+                            </nz-select>
+                        </div>
+                        <div class="alternative"> <span>- OR -</span> </div>
+                        <div class="upload-zone" [class.drag-over]="isDragging" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
+                            <nz-icon nzType="cloud-upload" nzTheme="outline" class="upload-icon"/>
+                            <h4>Drag and drop your PDF textbook here</h4>
+                            <p>or click to browse from your computer</p>
+
+                            <input type="file" #fileInput accept=".pdf" class="hidden-file-input" (change)="onFileSelected($event)">
+                            <button nz-button nzType="default" (click)="fileInput.click()">Browse files</button>
+
+                            @if (selectedFile) {
+                                <div class="selected-file">
+                                    <nz-icon nzType="file-pdf" nzTheme="outline" class="pdf-icon"  />
+                                    <strong>{{ selectedFile.name }}</strong>
+                                    <button nz-button nzType="text" nzDanger nzSize="small" (click)="removeFile()">
+                                        <nz-icon nzType="delete" /> 
+                                    </button>
+                                </div>
+                                
+                                <div>
+                                    <button @if(!isUploaded) nz-button nzType="primary" (click)="uploadManualToAI()">
+                                        <nz-icon nzType="setting" /> Parse and vectorize manual
+                                    </button>
+                                    <span @if(isUploaded)>
+                                        <nz-icon nzType="check-circle" /> Ready for AI generation
+                                    </span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                
+                    <div class="generation-filters">
+                        <h4><nz-icon nzType="sliders" nzTheme="outline" /> AI configuration</h4>
+                        
+                        <div class="filter-grid">
+                            <div class="filter-item">
+                                <label>Subject</label>
+                                <nz-select nzMode="tags" [(ngModel)]="topics" nzPlaceHolder="Add topics and press Enter…" style="width:100%"></nz-select>
+                            </div>
+
+                            <div class="filter-item">
+                                <label>Focus Area</label>
+                                <nz-select [(ngModel)]="focus">
+                                    <nz-option nzValue="grammar" nzLabel="Grammar & Structure"></nz-option>
+                                    <nz-option nzValue="vocabulary" nzLabel="Vocabulary & Synonyms"></nz-option>
+                                    <nz-option nzValue="conjugation" nzLabel="Verb Conjugation"></nz-option>
+                                    <nz-option nzValue="reading" nzLabel="Reading Comprehension"></nz-option>
+                                </nz-select>
+                            </div>
+
+                            <div class="filter-item filter-wide">
+                                <label>Exercise Types</label>
+                                <nz-select nzMode="multiple" [(ngModel)]="typesOfExercises" (ngModelChange)="onExerciseTypesChange($event)" nzPlaceHolder="Select types">
+                                    @for(type of availableExerciseTypes; track type.value) {
+                                        <nz-option [nzValue]="type.value" [nzLabel]="type.label"></nz-option>
+                                    }
+                                </nz-select>
+                            </div>
+
+                            @if (typesOfExercises.length > 0) {
+                                <div class="filter-item filter-wide filter-exercises">
+                                    <label>Number of questions per type:</label>
+                                    <div class="exercise-types-grid">
+                                        @for(type of typesOfExercises; track type) {
+                                            <div class="ex-types">
+                                                <span>{{ getLabelForType(type) }}</span>
+                                                <nz-input-number [(ngModel)]="exerciseCounts[type]" [nzMin]="1" [nzMax]="20" [nzStep]="1">
+                                                </nz-input-number>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions-row">
+                    <button nz-button nzType="primary" class="ai-btn" (click)="generateResource()" [nzLoading]="isGenerating" [disabled]="!isUploaded">
+                        Generate worksheet
+                    </button>
+                </div>
+
+                @if (previewItems && previewItems.length > 0) {
+                    <div class="preview-zone">
+                        <div class="preview-header">
+                            <h3><nz-icon nzType="edit" nzTheme="outline" /> Review generated exercises</h3>
+                            <p>Edit questions, options or regenerate specific items before assigning them to the class.</p>
+                        </div>
+
+                    <div class="preview-list">
+                        @for (item of previewItems; track item; let i = $index){
+                        <div class="preview-card">
+                            <div class="preview-options">
+                                <strong class="exercise-badge">
+                                    <nz-icon nzType="robot" /> Exercise {{ i + 1 }} 
+                                    <span class="exercise-type-tag">{{ item.exercise_type }}</span>
+                                </strong>
+                                <div class="card-actions">
+                                    <button nz-button nzType="default" nzSize="small" (click)="regenerateItem(i)">
+                                        <nz-icon nzType="reload" /> Regenerate
+                                    </button>
+                                    <button nz-button nzType="text" nzDanger nzSize="small" (click)="removeItem(i)">
+                                        <nz-icon nzType="delete" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            @if (item.warnings && item.warnings.length > 0) {
+                                <div class="warning-banner">
+                                    <nz-icon nzType="warning" nzTheme="fill" />
+                                    <span>{{ item.warnings.join(' · ') }}</span>
+                                </div>
+                            }
+
+                            <div class="exercise-content">
+                                <div class="form-group">
+                                    <label>Title / Instruction:</label>
+                                    <input nz-input [(ngModel)]="item.content.exercise_title" placeholder="E.g., Choose the correct form of the verb"/>
+                                </div>
+
+                                @if (item.exercise_type === 'multiple-choice') {
+                                    <div class="form-group">
+                                        <label>Sentence:</label>
+                                        <input nz-input [(ngModel)]="item.content.question"/>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Options:</label>
+                                        <div class="options-grid">
+                                            @for (opt of item.content.options; track $index; let optIdx = $index) {
+                                                <div class="option-item" [class.is-correct]="item.content.options[optIdx] === item.correct_answer">
+                                                    <input nz-input [(ngModel)]="item.content.options[optIdx]"/>
+                                                    <span class="correct-badge" *ngIf="item.content.options[optIdx] === item.correct_answer">
+                                                        <nz-icon nzType="check-circle" nzTheme="fill" /> Correct
+                                                    </span>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+
+                                } @else if (item.exercise_type === 'translation') {
+                                    <div class="form-group">
+                                        <label>Sentence to translate:</label>
+                                        <input nz-input [(ngModel)]="item.content.base_sentence" placeholder="The sentence students must translate"/>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Instruction:</label>
+                                        <input nz-input [(ngModel)]="item.content.question" placeholder="E.g. Translate into Romanian."/>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Expected answer:</label>
+                                        <input nz-input [(ngModel)]="item.correct_answer" class="expected-answer-input"/>
+                                    </div>
+
+                                } @else if (item.exercise_type === 'fill-in-the-blank') {
+                                    <div class="form-group">
+                                        <label>Complete sentence (no blanks):</label>
+                                        <input nz-input [(ngModel)]="item.content.base_sentence"/>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Sentence with blank:</label>
+                                        <input nz-input [(ngModel)]="item.content.question"/>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Expected answer:</label>
+                                        <input nz-input [(ngModel)]="item.correct_answer" class="expected-answer-input"/>
+                                    </div>
+
+                                } @else if (item.exercise_type === 'match') {
+                                    <div class="form-group">
+                                        <label>Pairs:</label>
+                                        <div class="pairs-table">
+                                            @for (pair of item.content.pairs; track $index; let pIdx = $index) {
+                                                <div class="pair-row">
+                                                    <input nz-input [(ngModel)]="item.content.pairs[pIdx].target" placeholder="Target word"/>
+                                                    <span class="pair-sep">→</span>
+                                                    <input nz-input [(ngModel)]="item.content.pairs[pIdx].native" placeholder="Native translation"/>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                }
+            </div>
+
+            <div class="publish-zone">
+                <div class="publish-header">
+                    <h4><nz-icon nzType="send" nzTheme="outline" /> Finalize Assignment</h4>
+                    <p>Everything looks good? Name your assignment and set a deadline for your students.</p>
+                </div>
+                
+                <div class="publish-actions">
+                    <div class="form-group assignment-title">
+                        <label>Assignment title</label>
+                        <input nz-input [(ngModel)]="worksheetTitle" placeholder="E.g., Unit 1: Past Tense Vocabulary" nzSize="large" />
+                    </div>
+                    <div class="form-group assignment-date">
+                        <label>Due date:</label>
+                        <input nz-input type="datetime-local" [(ngModel)]="dueDate" nzSize="large" />
+                    </div>
+                </div>
+                
+                <button nz-button nzType="primary" nzSize="large" class="publish-button" (click)="publishWorksheet()">
+                    Publish and send to class
+                </button>
+            </div>
+    </div>
+}
+            </section>
+        }
+
+        @if (activeTab === 'settings') {
+            <section>
+                <h3>Class settings</h3>
+                <div class="settings-card">
+                    <h4>General information</h4>
+                    <label>Classroom name</label>
+                    <input nz-input [ngModel]="classroomName" placeholder="Example: English 101" />
+                    <button nz-button nzType="primary" class="save-changes">Save changes</button>
+                </div>
+                <button nz-button nzDanger>Delete classroom</button>
+            </section>
+        }
+    </main>
+</div>

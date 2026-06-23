@@ -1,3 +1,50 @@
-<p>Here you can see your progress</p>
-For language: {{selectedLanguage()}}
-Graph: 
+<div class="progress-page">
+  @if (isLoading) {
+    <div class="loading-state">Loading your progress...</div>
+  } @else if (error) {
+    <div class="error-state">Could not load progress data. Complete some exercises first!</div>
+  } @else {
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <span class="stat-label">Current Level</span>
+        <span class="stat-value level-badge" [style.background]="getLevelColor(currentLevel)">{{ currentLevel }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">ELO Score</span>
+        <span class="stat-value">{{ currentElo }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Exercises Done</span>
+        <span class="stat-value">{{ totalResponses }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">XP</span>
+        <span class="stat-value">{{ xp }}</span>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <h3 class="chart-title">ELO Evolution (last 30 days)</h3>
+      <div class="chart-wrapper">
+        <canvas baseChart
+          [data]="eloChartData"
+          [options]="eloChartOptions"
+          type="line">
+        </canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <h3 class="chart-title">Correct vs Total per day</h3>
+      <div class="chart-wrapper">
+        <canvas baseChart
+          [data]="accuracyChartData"
+          [options]="accuracyChartOptions"
+          type="bar">
+        </canvas>
+      </div>
+    </div>
+
+  }
+</div>

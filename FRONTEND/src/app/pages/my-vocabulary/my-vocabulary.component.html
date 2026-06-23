@@ -1,2 +1,39 @@
-<p>Stored words will appear here.</p>
+<div class="main-container">
+  
+  <div class="header-section">
+    <h1>My vocabulary</h1>
+    <span class="badge">{{ authService.targetLanguageFull | uppercase }}</span>
+  </div>
 
+  <div class="add-word-card">
+    <h3>Add a new word or expression</h3>
+    <div class="input-group">
+      <input type="text" [(ngModel)]="newTargetWord" placeholder="Word in {{ authService.targetLanguageFull }}" class="vocab-input" (keyup.enter)="saveWord()">
+      <input type="text" [(ngModel)]="newNativeWord" placeholder="Translation" class="vocab-input" (keyup.enter)="saveWord()">
+      
+      <button (click)="saveWord()" [disabled]="!newTargetWord.trim() || !newNativeWord.trim()" class="btn-submit">
+        Save Word
+      </button>
+    </div>
+  </div>
+
+  <div class="words-list">
+    @for (word of words(); track word.id) {
+      <div class="word-card">
+        <div class="word-info">
+          <strong class="target-word">{{ word.target_word }}</strong>
+          <span class="native-word">{{ word.native_word }}</span>
+        </div>
+        <button class="btn-delete" (click)="removeWord(word.id)">
+          <nz-icon nzType="delete" nzTheme="outline" />
+        </button>
+      </div>
+    }
+    @empty {
+      <div class="empty-state">
+        <p>Your vocabulary list is empty. Start adding words!</p>
+      </div>
+    }
+  </div>
+
+</div>

@@ -28,6 +28,14 @@ class TeacherService:
 
     @staticmethod
     def process_and_ingest_manual(pdf_path: str, teacher_id: int, language: str, level: str, title: str, conn) -> dict:
+        file_hash = calculate_file_hash(pdf_path)
+        existing = TeacherRepository.find_manual_by_hash(teacher_id, file_hash, conn)
+        if existing:
+            raise ValueError(
+                f"This file has already been uploaded (manual id={existing['manual_id']}, title='{existing['title']}'). "
+                "Delete the existing manual first if you want to reingest it"
+            )
+
         reader = PdfReader(pdf_path)
         pages_text = [page.extract_text() or "" for page in reader.pages]
         total_pages = len(pages_text)
@@ -53,7 +61,7 @@ class TeacherService:
             teacher_id=teacher_id, filename=filename, title=title, 
             language=language, level=level, total_pages=total_pages, 
             total_chunks=len(all_chunks), chapters=list(chapter_map.values()), 
-            conn=conn
+            conn=conn, file_hash=file_hash
         )
 
         texts = [t for t, _, _ in all_chunks]

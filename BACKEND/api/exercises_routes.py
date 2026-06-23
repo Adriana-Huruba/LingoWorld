@@ -7,9 +7,11 @@ from pydantic import BaseModel
 
 from core.database import get_db
 from core.ingest_pdf import run_ingestion
+from core.security import get_current_user
 from services.exercise_service import get_or_generate_exercise, get_all_topics
 from services.initial_quiz_service import get_quiz_exercises, submit_quiz_results, has_completed_quiz
 from services.recommender_service import get_next_exercise, record_answer
+from services.agent_service import generate_hint
 
 exercises_router = APIRouter()
 
@@ -17,9 +19,9 @@ class ExerciseRequest(BaseModel):
     user_id: int
     topic: str
     level: str = "B2"
-    type: str = "multiple-choice" # implicit, if not specified
-    language: str = "english" # implicit, if not specified 
-    native_language: str = "romanian" # implicit
+    type: str = "multiple-choice"
+    language: str = "english"
+    native_language: str = "romanian"
     skill_type: Optional[str] = None
 
 class NextExerciseRequest(BaseModel):
@@ -27,23 +29,31 @@ class NextExerciseRequest(BaseModel):
     target_language: str = "english"
     skill_type: Optional[str] = None
     topic: Optional[str] = None
+    allow_generation: bool = True
 
 class SubmitAnswerRequest(BaseModel):
     user_id: int
     exercise_id: int
     is_correct: bool
     response_time_seconds: int
-    exercise_type: str # multiple-choice, fill-in-the-blank, translation, match
+    exercise_type: str
     used_hint: bool = False
     assignment_id: Optional[int] = None
+
+class HintRequest(BaseModel):
+    exercise_id: int
+    exercise_type: str
+    language: str = "english"
+    native_language: str = "romanian"
+    level: str = "B1"
 
 class InitialQuizSubmitRequest(BaseModel):
     user_id: int
     language: str
-    responses: list[dict] # exercise_id, is_correct, response_time, exercise_type, used_hint
+    responses: list[dict]
 
 @exercises_router.post("/generate-exercise")
-async def get_exercise(request: ExerciseRequest, conn=Depends(get_db)):  #TODO - sa caut si dupa continut
+async def get_exercise(request: ExerciseRequest, conn=Depends(get_db), _=Depends(get_current_user)):  #TODO - sa caut si dupa continut
     """
     1. Searching in postgreSQL for relevant exercises based on the topic, language and level.
     2. If not found, searching in qdrant for relevant chunks from the textbooks, then sending them to LLM to generate the exercise.
@@ -75,9 +85,9 @@ async def get_exercise(request: ExerciseRequest, conn=Depends(get_db)):  #TODO -
         raise HTTPException(status_code=500, detail=str(e))
     
 @exercises_router.post("/next-exercise")
-async def next_exercise(request: NextExerciseRequest, conn = Depends(get_db)):
+async def next_exercise(request: NextExerciseRequest, conn=Depends(get_db), _=Depends(get_current_user)):
     try:
-        exercise = get_next_exercise(user_id=request.user_id, target_language=request.target_language, conn=conn, skill_type=request.skill_type, topic=request.topic)
+        exercise = get_next_exercise(user_id=request.user_id, target_language=request.target_language, conn=conn, skill_type=request.skill_type, topic=request.topic, allow_generation=request.allow_generation)
         if not exercise:
             raise HTTPException(
                 status_code=404,
@@ -93,7 +103,7 @@ async def next_exercise(request: NextExerciseRequest, conn = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
     
 @exercises_router.post("/submit-answer")
-async def submit_answer(request: SubmitAnswerRequest, conn = Depends(get_db)):
+async def submit_answer(request: SubmitAnswerRequest, conn=Depends(get_db), _=Depends(get_current_user)):
     try:
         return record_answer(
             user_id=request.user_id, 
@@ -111,6 +121,37 @@ async def submit_answer(request: SubmitAnswerRequest, conn = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
     
 
+@exercises_router.post("/hint")
+async def get_hint(request: HintRequest, conn=Depends(get_db), _=Depends(get_current_user)):
+    try:
+        from dao.exercise_dao import ExerciseDAO
+        exercise = ExerciseDAO.find_by_id(request.exercise_id, conn)
+        if not exercise:
+            raise HTTPException(status_code=404, detail="Exercise not found")
+
+        content = exercise.get("content") if isinstance(exercise, dict) else exercise.content
+        if isinstance(content, str):
+            import json as _json
+            content = _json.loads(content)
+
+        question = content.get("question", content.get("exercise_title", ""))
+        options = content.get("options", [])
+
+        hint = generate_hint(
+            exercise_type=request.exercise_type,
+            question=question,
+            options=options,
+            level=request.level,
+            language=request.language,
+            native_language=request.native_language,
+        )
+        return {"hint": hint}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @exercises_router.get("/initial-quiz/{language}")
 async def get_initial_quiz(language: str, conn = Depends(get_db)):
     try:
@@ -126,7 +167,7 @@ async def get_initial_quiz(language: str, conn = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
     
 @exercises_router.post("/initial-quiz/submit")
-async def submit_initial_quiz(request: InitialQuizSubmitRequest, conn = Depends(get_db),):
+async def submit_initial_quiz(request: InitialQuizSubmitRequest, conn=Depends(get_db), _=Depends(get_current_user)):
     try:
         if has_completed_quiz(request.user_id, conn):
             raise HTTPException(
@@ -152,7 +193,7 @@ def _ingest_and_cleanup(temp_path: str, language: str, level: str, uploaded_by_u
 
 
 @exercises_router.post("/upload-manual")
-async def upload_manual(background_tasks: BackgroundTasks, language: str = Form(...), level: str = Form(...), file: UploadFile = File(...), uploaded_by_user_id: Optional[int] = Form(None)):
+async def upload_manual(background_tasks: BackgroundTasks, language: str = Form(...), level: str = Form(...), file: UploadFile = File(...), uploaded_by_user_id: Optional[int] = Form(None), _=Depends(get_current_user)):
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted!")
 
@@ -168,9 +209,23 @@ async def upload_manual(background_tasks: BackgroundTasks, language: str = Form(
     }
 
 @exercises_router.get("/alltopics")
-async def get_topics(conn=Depends(get_db)):
+async def get_topics(language: Optional[str] = None, level: Optional[str] = None, conn=Depends(get_db), _=Depends(get_current_user)):
     try:
-        topics = get_all_topics(conn=conn)
+        topics = get_all_topics(conn=conn, language=language, level=level)
         return topics
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@exercises_router.get("/progress/{user_id}")
+async def get_user_progress(user_id: int, language: str, conn=Depends(get_db), _=Depends(get_current_user)):
+    try:
+        from dao.exercise_dao import ExerciseDAO
+        data = ExerciseDAO.get_user_progress(user_id, language, conn)
+        if not data:
+            raise HTTPException(status_code=404, detail="No progress data found")
+        return data
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

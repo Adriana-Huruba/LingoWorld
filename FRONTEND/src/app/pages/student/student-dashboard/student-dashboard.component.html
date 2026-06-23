@@ -1,36 +1,59 @@
 <div class="student-dashboard-container">
     <h2>Welcome, {{student()?.name}}!</h2>
-    <div class="search-bar">
-        <input nz-input placeholder="Search for a class..." [(ngModel)]="searchText" (input)="filterText()" />
-        <button> 
+    <p style="color: #8c8c8c; margin-bottom: 2rem;">Ready to learn something new today?</p>
+
+    <div class="actions-section" style="display: flex; gap: 1rem; align-items: center; margin-bottom: 2rem;">
+        <nz-input-group [nzSuffix]="suffixIconSearch" class="search-bar">
+            <input type="text" nz-input placeholder="Search for a class..." [(ngModel)]="searchText" (input)="filterText()" />
+        </nz-input-group>
+        <ng-template #suffixIconSearch>
             <nz-icon nzType="search" nzTheme="outline" />
+        </ng-template>
+
+        <button nz-button nzType="primary" (click)="enrollIn()" class="enter-class-btn">
+            <nz-icon nzType="plus" nzTheme="outline" /> Enter a new class
         </button>
     </div>
 
-    <button nz-button nzType="primary" (click)="enrollIn()" class="add-class-btn">
-        <nz-icon nzType="plus" nzTheme="outline" />
-        Enter a new class
-    </button>
+    <div class="classes-header">
+        <p style="margin: 0; font-weight: 500; font-size: 1.1rem;">Your classes</p>
+        <div class="view-toggle">
+            <nz-icon nzType="appstore" nzTheme="outline" [class.active-view]="viewMode === 'grid'" (click)="viewMode = 'grid'" title="Grid View" />
+            <nz-icon nzType="bars" nzTheme="outline" [class.active-view]="viewMode === 'list'" (click)="viewMode = 'list'" title="List View" />
+        </div>
+    </div>
 
-    <nz-modal [(nzVisible)]="isModalVisible" nzTitle="Enroll in a new class" (nzOnCancel)="handleCancel()" (nzOnOk)="handleOk()">
-        <ng-container *nzModalContent>
-            <input nz-input placeholder="Classroom inivitation code" [(ngModel)]="inviteCode" />
-        </ng-container>
-    </nz-modal>
-    <p>Your classes:</p>
-    <div class="classroom-grid">
+    <div [class]="viewMode === 'grid' ? 'grid-view' : 'list-view'">
         @for(classroom of classrooms; track classroom.id) 
         {
-            <div class="classroom-card" (click)="navigateToClassroom(classroom.id)">
-                <button class="classroom-button">
+            <div class="classroom-item" (click)="navigateToClassroom(classroom.id)">
+                <div class="classroom-icon-wrapper">
                     <img src="classroom.svg" alt="Classroom icon" class="classroom-icon">
-                </button>
-                <h3>{{ classroom.name }}</h3>
-                <p>Teacher: {{ classroom.teacher_name}}</p>
+                </div>
+                
+                <div class="classroom-details">
+                    <h3 class="classroom-title">{{ classroom.name }}</h3>
+                    <div class="classroom-teacher">
+                        <nz-icon nzType="user" /> 
+                        <span>Teacher: {{ classroom.teacher_name }}</span>
+                    </div>
+                </div>
             </div>
         }
     </div>
-    <div class="assignments-due">
-        Assignments due
+
+    <div class="assignments-section">
+        <h3 class="section-title">Assignments due</h3>
+        
+        <div class="empty-state">
+            <nz-icon nzType="check-circle" nzTheme="outline" />
+            <p>You have no pending assignments</p>
+        </div>
     </div>
+
+    <nz-modal [(nzVisible)]="isModalVisible" nzTitle="Enroll in a new class" (nzOnCancel)="handleCancel()" (nzOnOk)="handleOk()">
+        <ng-container *nzModalContent>
+            <input nz-input placeholder="Classroom invitation code" [(ngModel)]="inviteCode" />
+        </ng-container>
+    </nz-modal>
 </div>

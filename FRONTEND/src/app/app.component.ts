@@ -1,5 +1,5 @@
-import { Component, inject } from '@angular/core';
-import { Router, RouterOutlet } from '@angular/router';
+import { Component} from '@angular/core';
+import { RouterOutlet } from '@angular/router';
 import { NavbarComponent } from './pages/navbar/navbar.component';
 
 @Component({
@@ -11,11 +11,5 @@ import { NavbarComponent } from './pages/navbar/navbar.component';
 
 export class AppComponent {
   title = 'lingoworld';
-//   constructor(private router: Router) {}
-
-//   shouldShowNavbar(): boolean {
-//     const hiddenRoutes = ['/login', '/register'];
-//     return !hiddenRoutes.includes(this.router.url);
-// }
 }
 

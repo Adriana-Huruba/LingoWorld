@@ -4,10 +4,6 @@
     </button>
     <div class="classroom-details">
         <h2>{{ classroomName }}</h2>
-        <span>
-            <nz-icon nzType="user" nzTheme="outline"/>
-            Teacher: {{ classroom.teacher_name }}
-        </span>
     </div>
     <p>Check your assignments and track your progress</p>
 </div>
@@ -62,7 +58,16 @@
     <div class="box ranking-box">
         <div class="box-header">Ranking</div>
         <div class="box-content">
-            <p>See what your colleagues do</p>
+            @if (rankingStudents.length === 0) {
+                <p class="empty-state">No students yet.</p>
+            }
+            @for (student of rankingStudents; track student.id; let i = $index) {
+                <div class="ranking-row" [class.ranking-me]="student.id === authService.userId">
+                    <span class="ranking-position">{{ i + 1 }}</span>
+                    <span class="ranking-name">{{ student.name }}</span>
+                    <span class="ranking-elo">{{ student.elo_score }} ELO</span>
+                </div>
+            }
         </div>
     </div>
 

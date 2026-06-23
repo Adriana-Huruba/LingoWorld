@@ -1,5 +1,4 @@
-import json
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date as date_type
 from typing import Optional
 
 from dao.exercise_dao import ExerciseDAO
@@ -29,9 +28,8 @@ CEFR_LEVELS: dict[str, tuple[int, int]] = {
 }
 
 CEFR_ORDER = ["A1", "A2", "B1", "B2", "C1", "C2"]
-# ELO_DEFAULT = 200
-ELO_K_NEW = 32  # K-factor for new users(quiz < 20 questions)
-ELO_K_STABLE = 16   # K-factor after stabilization
+ELO_K_NEW = 32
+ELO_K_STABLE = 16
 EXPECTED_TIME_PER_TYPE = {
     "multiple-choice": 8,
     "fill-in-the-blank": 20,
@@ -51,16 +49,18 @@ def calculate_new_elo(user_elo, item_elo, correct, total_responses):
 
     return max(0, min(1600, round(new_elo)))
  
-def elo_to_cefr(elo): # mapping elo to cefr level
+
+def elo_to_cefr(elo):
     for level, (low, high) in CEFR_LEVELS.items():
         if low <= elo < high:
             return level
     return "C2"
  
+
 def cefr_to_elo(level):
-    return CEFR_TO_ELO.get(level, 200) # default for A1 
+    return CEFR_TO_ELO.get(level, 200)
  
-#  ZPD
+
 def get_target_levels(user_elo):
     current_level = elo_to_cefr(user_elo)
     index = CEFR_ORDER.index(current_level)
@@ -129,7 +129,8 @@ def calculate_next_review_sm2(is_correct, used_hint, response_time, exercise_typ
         new_ef = easiness_factor + (0.1 - (5-q) * (0.08 + (5-q) * 0.02))
         new_ef = max(1.3, new_ef) 
 
-    next_review = datetime.now(timezone.utc) + timedelta(days=new_interval)
+    next_day = date_type.today() + timedelta(days=new_interval)
+    next_review = datetime(next_day.year, next_day.month, next_day.day, 0, 0, 0, tzinfo=timezone.utc)
     return next_review, new_ef, new_interval, q
  
 def _find_exercise_in_db(user_id, user_elo, target_levels, language, skill_type, topic, conn):
@@ -146,7 +147,7 @@ def _find_exercise_in_db(user_id, user_elo, target_levels, language, skill_type,
     return None 
 
 # rs
-def get_next_exercise(user_id: int, target_language: str, conn, skill_type: Optional[str] = None, topic: Optional[str] = None):
+def get_next_exercise(user_id: int, target_language: str, conn, skill_type: Optional[str] = None, topic: Optional[str] = None, allow_generation: bool = True):
     user = ExerciseDAO.get_user_for_rs(user_id, conn)
     if not user:
         print(f"[RS] user_id={user_id} does not exist in db or did not complete the quiz")
@@ -160,6 +161,10 @@ def get_next_exercise(user_id: int, target_language: str, conn, skill_type: Opti
     exercise = _find_exercise_in_db(user_id, user_elo, target_levels, target_language, skill_type, topic, conn)
     if exercise:
         return exercise.to_dict() if hasattr(exercise, "to_dict") else exercise
+
+    if not allow_generation:
+        print(f"[RS] No exercise in DB and generation disabled")
+        return None
 
     print(f"[RS] Agent is generating new ex")
     result = run_exercise_agent(
@@ -186,6 +191,26 @@ def get_next_exercise(user_id: int, target_language: str, conn, skill_type: Opti
  
  
 def record_answer(user_id: int, exercise_id: int,  is_correct: bool, response_time_seconds: int, exercise_type: str, used_hint: bool, conn, assignment_id: Optional[int] = None,) -> dict:
+    """
+    Processes a user's answer, updates their profile and schedules spaced repetition(sm-2).
+
+    Acts as the main transaction for the recommender system. It recalculates the Elo rating, evaluates SM-2 spaced repetition metrics, awards XP based on performance speed, 
+    and persists all progress to the database.
+
+    Args:
+        user_id (int): the ID of the user
+        exercise_id (int): the ID of the completed exercise
+        is_correct (bool): True if the answer was correct
+        response_time_seconds (int): Time taken to complete the exercise
+        exercise_type (str): the category of the exercise
+        used_hint (bool): True if the user used a hint
+        conn: The database connection object
+        assignment_id (Optional[int], optional): the ID of the assignment if applicable. Defaults to None
+
+    Returns:
+        dict: A summary of the updated metrics including Elo changes, CEFR updates, next review schedule, and gained XP.
+    """
+
     user = ExerciseDAO.get_user_for_rs(user_id, conn)
     exercise = ExerciseDAO.find_by_id(exercise_id, conn)
     prev = ExerciseDAO.get_last_progress(user_id, exercise_id, conn)

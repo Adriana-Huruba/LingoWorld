@@ -1,6 +1,7 @@
-import { Component, ElementRef, inject, HostListener } from '@angular/core';
+import { Component, ElementRef, inject, HostListener, OnInit, effect } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
 import { Router } from '@angular/router';
+import { ExerciseService } from '../../core/services/exercise.service';
 
 @Component({
   selector: 'app-navbar',
@@ -10,13 +11,17 @@ import { Router } from '@angular/router';
   styleUrl: './navbar.component.scss'
 })
 
-export class NavbarComponent {
+export class NavbarComponent{
   public authService = inject(AuthService);
+  exerciseService = inject(ExerciseService);
   eRef = inject(ElementRef);
   router: Router = inject(Router);
 
   isUserDropdownOpen = false;
   isDropdownOpen = false;
+  userRole = this.authService.userRole;
+  userXp = this.authService.userXp;
+  userElo = this.authService.userElo;
 
   languageOptions = [
     { id: 'en', name: 'English', flag: 'uk-flag.svg' },
@@ -24,6 +29,29 @@ export class NavbarComponent {
     { id: 'fr', name: 'Français', flag: 'france-flag.svg' },
     { id: 'es', name: 'Español', flag: 'spain-flag.svg' }
   ];
+  
+  constructor(){
+    effect(() => {
+      const loggedIn = this.authService.isLoggedIn();
+      const role = this.authService.userRole();
+
+      if (loggedIn && role !== 'teacher') {
+        this.loadUserStats();
+      }
+    });
+  }
+
+  loadUserStats(): void {
+    const userId = this.authService.userId;
+    const lang = this.authService.targetLanguageFull;
+
+    this.exerciseService.getUserProgress(userId, lang).subscribe({
+      next: (data) => {
+        this.authService.userXp.set(data.xp);
+        this.authService.userElo.set(data.current_elo);
+      }
+    });
+  }
 
   @HostListener('document:click', ['$event'])
   clickout(event: Event) {
@@ -33,19 +61,23 @@ export class NavbarComponent {
     }
   }
 
-  NavigateToDashboard() {
+  navigateToDashboard() {
+    this.isUserDropdownOpen = false;
     this.router.navigate(['/']);
   }
 
-  NavigateToVocabulary() {
+  navigateToVocabulary() {
     this.router.navigate(['/my-vocabulary']);
   }
 
-  NavigateToProgres() {
-    this.router.navigate(['/progress']); //TODO
+  navigateToProgress() {
+    this.isUserDropdownOpen = false;
+    this.router.navigate(['/progress']);
   }
-  NavigateToSettings() {
-    this.router.navigate(['/settings']); //TODO
+
+  navigateToSettings() {
+    this.isUserDropdownOpen = false;
+    this.router.navigate(['/settings']);
   }
   
   get targetLanguage() {

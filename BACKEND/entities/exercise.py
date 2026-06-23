@@ -7,14 +7,14 @@ class Exercise:
     language: str
     level: str
     type: str
-    category: str # skill_type (grammar, vocabulary etc.)
+    category: str
     topic: Optional[str]
     content: dict
     correct_answer: str
     elo_difficulty: Optional[int]
     source_manual: Optional[str]
     points: int = 10
-    reason: Optional[str] = None  # spaced_repetition/new_exercise/reinforcement/ newly_generated
+    reason: Optional[str] = None
 
     @staticmethod
     def _normalize_content(content: dict, correct_answer: str = "") -> dict:

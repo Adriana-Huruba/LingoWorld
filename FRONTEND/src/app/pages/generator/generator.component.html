@@ -1,94 +1,68 @@
-<div class="main-container">
-  <h1>{{ title }}</h1>
+<div class="homepage-container">
+    @if (!showPlayer) {
+        <div class="main-container">
+            <h1>Custom session</h1>
+            <p class="subtitle">
+                Configure your session and the recommender system will find the best exercises for your level.
+            </p>
 
-  <button (click)="generateNewExercise()" [disabled]="isLoading" class="btn-generate"> 
-    {{ isLoading ? 'Generating...' : 'Generate an exercise' }}
-  </button>
+            <div class="filter-form">
+                <div class="filter-row">
+                    <label>Topic</label>
+                    <select [(ngModel)]="selectedTopic">
+                        <option value="">Any topic</option>
+                        @for (topic of topics; track topic) {
+                            <option [value]="topic">{{ topic }}</option>
+                        }
+                    </select>
+                </div>
 
-  <hr class="divider">
+                <div class="filter-row">
+                    <label>Skill</label>
+                    <select [(ngModel)]="selectedSkillType">
+                        @for (skill of skillTypes; track skill.value) {
+                            <option [value]="skill.value">{{ skill.label }}</option>
+                        }
+                    </select>
+                </div>
 
-  @if(isLoading) {
-    <div class="loading-message">
-      <p>It may take a few seconds...</p>
-    </div>
-  }
+                <div class="filter-row">
+                    <label>Number of exercises</label>
+                    <div class="count-options">
+                        @for (n of countOptions; track n) {
+                            <button class="count-btn"
+                                [class.active]="selectedCount === n"
+                                (click)="selectedCount = n">
+                                {{ n }}
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
 
-  @if(errorMessage) {
-    <div class="error-container">
-      <p>{{ errorMessage }}</p>
-    </div>
-  }
+            <button (click)="startSession()" [disabled]="isLoading" class="btn-generate">
+                {{ isLoading ? 'Loading...' : 'Start session' }}
+            </button>
 
-  @if(receivedExercise && !isLoading) 
-  {
-    <div class="exercise-container">
-      <div class="exercise-header">
-        <span class="badge level-badge">{{ receivedExercise.level }}</span>
-        <span class="badge topic-badge">{{ receivedExercise.topic }}</span>
-      </div>
-
-      <h3>{{ receivedExercise.content.exercise_title }}</h3>
-      
-      <div class="question-box">
-        <p class="question-text">
-          <strong>Exercise:</strong> {{ currentQuestion?.question || receivedExercise.content.exercise_title }}
-        </p>
-
-        @if(receivedExercise.type === 'multiple-choice' && currentQuestion?.options?.length)
-        {
-          <div class="options-container">
-            @for (option of currentQuestion.options; track option) {
-              <label class="option-label" 
-                [ngClass]="{
-                 'selected': selectedOption === option && isAnswerCorrect === null,
-                 'correct-option': isAnswerCorrect !== null && option === receivedExercise.correct_answer,
-                 'wrong-option': isAnswerCorrect === false && selectedOption === option
-                }">
-                  <input type="radio" name="answerOption" [value]="option" [(ngModel)]="selectedOption" [disabled]="isAnswerCorrect !== null">
-                  {{ option }}
-              </label>
+            @if(isLoading) {
+                <div class="status-message loading">
+                    <p>Finding the best exercises for you...</p>
+                </div>
             }
-          </div>
-        }
-        @else if(receivedExercise.type === 'fill-in-the-blank' || receivedExercise.type === 'translation')
-        {
-          <div class="text-answer-container">
-            <input type="text" class="text-input" [(ngModel)]="selectedOption" [disabled]="isAnswerCorrect !== null" placeholder="Type your answer here" />
-          </div>
-        }
-        @else
-        {
-          <div class="text-answer-container">
-            <input type="text" class="text-input" [(ngModel)]="selectedOption" [disabled]="isAnswerCorrect !== null" placeholder="Type your answer here" />
-          </div>
-        }
-      </div>
 
-      @if(submitMessage) 
-      {
-        <div class="feedback-message" [ngClass]="{'correct': isAnswerCorrect, 'wrong': isAnswerCorrect === false}">
-          {{ submitMessage }}
+            @if(errorMessage) {
+                <div class="status-message error">
+                    <p>{{ errorMessage }}</p>
+                </div>
+            }
         </div>
-      }
-
-      <div class="action-buttons">
-        @if(isAnswerCorrect === null)
-        {
-          <button class="btn-hint" (click)="useHint()" [disabled]="usedHint">
-            {{ usedHint ? 'Already used hint' : 'Use Hint' }}
-          </button>
-          <button class="btn-submit" (click)="submitAnswer()" [disabled]="!selectedOption">
-            Check answers
-          </button>
-        } 
-        
-        @else 
-        {
-          <button class="btn-next" (click)="generateNewExercise()">
-            Next exercise ➔
-          </button>
-        }
-      </div>
-    </div>
-  }
+    } @else {
+        <app-universal-player
+            [preloadedExercises]="generatedQuestions"
+            [title]="'Custom Session'"
+            [mode]="QuizMode.GENERATOR"
+            (closed)="onPlayerClosed()"
+            (completed)="onPlayerCompleted($event)">
+        </app-universal-player>
+    }
 </div>

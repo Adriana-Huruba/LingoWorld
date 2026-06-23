@@ -9,9 +9,9 @@ import { FormsModule } from '@angular/forms';
 import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzMessageService } from 'ng-zorro-antd/message';
 
-import { ClassroomService } from '../../core/services/classroom.service';
-import { TeacherService } from '../../core/services/teacher.service'; 
-import { AuthService } from '../../core/services/auth.service';
+import { ClassroomService } from '../../../core/services/classroom.service';
+import { TeacherService } from '../../../core/services/teacher.service'; 
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-classroom',
@@ -32,10 +32,12 @@ export class ClassroomComponent implements OnInit {
   teacherId!: number;
   classroomID!: number;
   students: any[] = [];
+  studentProgress: Map<number, { exercises_attempted: number; exercises_correct: number; elo_current: number | null; xp: number | null; assignments_done: number; }> = new Map();
   classroomName = '';
   inviteCode = '';
   errorMessage = '';
   activeTab: string = 'students';
+  assignments: any[] = [];
 
   existingManuals: any[] = [];
   selectedFile: File | null = null;
@@ -43,7 +45,7 @@ export class ClassroomComponent implements OnInit {
   isDragging = false;
   isUploaded = false;
 
-  topic = '';
+  topics: string[] = [];  // multiple topics — joined before sending to backend
   // numberOfExercises = 10;
   focus = 'grammar';
   typesOfExercises: string[] = ['multiple-choice', 'translation']; 
@@ -64,9 +66,10 @@ export class ClassroomComponent implements OnInit {
     { value: 'multiple-choice', label: 'Multiple choice' },
     { value: 'fill-in-the-blank', label: 'Fill in the blanks' },
     { value: 'translation', label: 'Translation' },
-    { value: 'true_false', label: 'True / False' },
+    // { value: 'true_false', label: 'True / False' },
     { value: 'matching', label: 'Matching pairs' }
   ];
+viewAssignment: any;
 
   ngOnInit() {
     this.teacherId = this.authService.currentUserId();
@@ -83,15 +86,29 @@ export class ClassroomComponent implements OnInit {
       return;
     }
 
+    this.classroomID = classroomId;
     this.loadClassroom(classroomId);
     this.loadStudents(classroomId);
+    this.loadStudentProgress(classroomId);
     this.loadExistingManuals();
+    this.loadAssignments(classroomId);
   }
 
   returnToDashboard() {
     this.router.navigate(['/homepage']);
   }
-  
+
+  copyInviteCode() {
+    if (!this.inviteCode) 
+      return;
+
+    navigator.clipboard.writeText(this.inviteCode).then(() => {
+        this.message.success(`Invite code ${this.inviteCode} copied to clipboard!`); }).catch(err => {
+        this.message.error('Failed to copy code.');
+        console.error('Could not copy text: ', err);
+    });
+  }
+
   setActiveTab(tabName: string) {
     this.activeTab = tabName;
   }
@@ -100,7 +117,7 @@ export class ClassroomComponent implements OnInit {
     this.classroomService.getClassroomById(classroomId).subscribe({
       next: (data) => {
         this.classroomName = data.name || '';
-        this.inviteCode = data.invite_code || data.inviteCode || '';
+        this.inviteCode = data.invite_code || '';
       },
       error: (err) => {
         console.error('Error loading classroom details', err);
@@ -111,9 +128,37 @@ export class ClassroomComponent implements OnInit {
 
   loadStudents(classroomId: number) {
     this.classroomService.getClassroomStudents(classroomId).subscribe({
-      next: (data) => {this.students = data.students || data;},
-      error: (err) => {console.error('Error loading classroom students', err);}
+      next: (data) => { this.students = data.students; },
+      error: (err) => { console.error('Error loading classroom students', err); }
     });
+  }
+
+  loadStudentProgress(classroomId: number) {
+    this.classroomService.getStudentProgress(classroomId).subscribe({
+      next: (data) => {
+        const map = new Map<number, any>();
+        (data.students).forEach((s) => map.set(s.id, s));
+        this.studentProgress = map;
+      },
+      error: (err) => { console.error('Error loading student progress', err); }
+    });
+  }
+
+  loadAssignments(classroomId: number) {
+    this.classroomService.getClassroomAssignments(classroomId).subscribe({
+      next: (data) => {
+        this.assignments = data.assignments;
+      },
+      error: (err) => console.error('Error loading teacher assignments', err)
+    });
+  }
+
+  getProgressFor(studentId: number) {
+    return this.studentProgress.get(studentId) ?? {
+      exercises_attempted: 0, exercises_correct: 0,
+      elo_current: null, xp: null,
+      assignments_done: 0, worksheets_completed: 0, avg_score_pct: null,
+    };
   }
 
   loadExistingManuals() {
@@ -186,7 +231,7 @@ export class ClassroomComponent implements OnInit {
   uploadManualToAI() {
     if (!this.selectedFile) return;
 
-    this.teacherService.uploadManual(this.selectedFile, this.teacherId, this.selectedFile.name, 'english', 'B2')
+    this.teacherService.uploadManual(this.selectedFile, this.teacherId, this.selectedFile.name, this.authService.targetLanguageFull, this.authService.userLevel)
       .subscribe({
         next: (res: any) => {
           this.manualId = res.manual_id;
@@ -199,8 +244,8 @@ export class ClassroomComponent implements OnInit {
   }
   
   generateResource() {
-    if (!this.topic || !this.manualId) {
-      this.message.warning('Please fill the subject and process the texbook first.');
+    if (!this.topics.length || !this.manualId) {
+      this.message.warning('Please add at least one topic and process the textbook first.');
       return;
     }
     
@@ -227,10 +272,10 @@ export class ClassroomComponent implements OnInit {
       teacher_id: this.teacherId,
       manual_id: this.manualId,
       exercise_counts: counts,
-      level: 'B2',
-      language: 'english',
-      topic: this.topic,
-      native_language: 'romanian',
+      level: this.authService.userLevel,
+      language: this.authService.targetLanguageFull,
+      topic: this.topics.join(', '),
+      native_language: this.authService.nativeLanguageFull,
       extra_instructions: `Special focus on: ${this.focus}`
     };
 
@@ -307,7 +352,7 @@ export class ClassroomComponent implements OnInit {
     }
 
     const payload = {
-      teacher_id: 1,
+      teacher_id: this.teacherId,
       manual_id: this.manualId,
       classroom_id: this.classroomID,
       title: this.worksheetTitle,
@@ -318,7 +363,7 @@ export class ClassroomComponent implements OnInit {
         correct_answer: item.correct_answer,
         elo_difficulty: item.elo_difficulty
       })),
-      config: { topic: this.topic }
+      config: { topic: this.topics.join(', ') }
     };
 
     this.teacherService.publishWorksheet(payload).subscribe({
@@ -327,7 +372,7 @@ export class ClassroomComponent implements OnInit {
         this.previewItems = [];
         this.isGenerated = false;
         this.worksheetTitle = '';
-        
+        this.loadAssignments(this.classroomID);
         this.setActiveTab('assignments'); 
       },
       error: () => this.message.error('Error at publication.')

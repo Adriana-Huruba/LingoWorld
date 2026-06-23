@@ -6,32 +6,40 @@
         <app-student-dashboard></app-student-dashboard>
     }   
     @if(authService.userRole() === "adult_learner") {
-        <div class="welcome-section"> 
-            <div class="welcome-text">
-                <h2>What would you like to learn about today?</h2>
-                <p>Choose from your recommended topics below or generate a custom lesson</p>
+        @if(!showPlayer) {
+            <div class="header">
+                <div class="header-text">
+                    <h1>Hello, {{ authService.userName() }} </h1>
+                    <p>What would you like to practice today?</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn-daily" [disabled]="isLoadingExercises" (click)="startDailyReview()">
+                        <img src="review-icon.svg" class="btn-icon" alt="Daily Review Icon">
+                        <span>Daily review</span>
+                    </button>
+                    <button class="btn-generator" (click)="redirectToGenerator()">
+                        <img src="generator-icon.svg" class="btn-icon" alt="Custom Lesson Icon">
+                        <span>Custom lesson</span>
+                    </button>
+                </div>
             </div>
-            
-            <div class="generator-card">
-                <p>Want something specific?</p>
-                <button class="btn-primary" (click)="redirectToGenerator()">
-                    Use the generator
-                </button>
+
+            <div class="topics-section">
+                <h2 class="section-title">Available topics</h2>
+                <div class="topics-grid">
+                    @for(topic of topics; track topic) {
+                        <button class="topic-card" [disabled]="isLoadingExercises" (click)="startTopicSession(topic)">
+                            <span class="topic-name">{{ topic }}</span>
+                        </button>
+                    }
+                    @empty {
+                        <p class="empty-topics">No topics available yet for this language.</p>
+                    }
+                </div>
             </div>
-        </div>
-        <button class="daily-review">Daily review</button>
-        <h3>Available topics:</h3>
-        <div class="topics-grid">
-            @for(topic of topics; track topic)
-            {
-                <button nz-button nzType="default" class="topic-btn">
-                    {{ topic }}
-                </button>
-            }
-            @empty {
-                <p class="empty-topics">No topics available yet.</p>
-            }
-            
-        </div>
+        } 
+        @else {
+            <app-universal-player [preloadedExercises]="playerQuestions" [title]="playerTitle" [mode]="QuizMode.SPECIFIC_TOPIC" (closed)="onPlayerClosed()" (completed)="onPlayerCompleted($event)"> </app-universal-player>
+        }
     }
 </div>

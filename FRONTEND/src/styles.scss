@@ -66,3 +66,35 @@ body {
 .btn-link:hover {
   text-decoration: underline;
 }
+
+.custom-success-notification {
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+  .ant-notification-notice-message {
+    color: #166534;
+    font-weight: 600;
+  }
+  .ant-notification-notice-description {
+    color: #15803d;
+  }
+  .ant-notification-notice-close-icon {
+    color: #166534;
+  }
+}
+
+.custom-error-notification  {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  
+  .ant-notification-notice-message {
+    color: #991b1b;
+    font-weight: 600;
+  }
+  .ant-notification-notice-description {
+    color: #b91c1c;
+  }
+}

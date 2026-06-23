@@ -17,7 +17,6 @@ from dao.teacher_dao import TeacherDAO
 
 
 load_dotenv()
-# client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 groq_client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
 
 DICT_PATH = os.path.join(os.path.dirname(__file__), "../data/dicts")
@@ -197,13 +196,6 @@ async def _generate_single_exercise(exercise_type, context, language, level, top
 
     for attempt in range(3):
         try:
-            # response = await asyncio.to_thread(# model.generate_content, prompt
-            #     client.models.generate_content,
-            #     model= "gemini-2.5-flash",
-            #     contents= prompt,
-            #     config={"response_mime_type": "application/json"}
-            #     )
-            
             response =await groq_client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[{"role": "user", "content": prompt}],
@@ -230,7 +222,7 @@ async def _generate_single_exercise(exercise_type, context, language, level, top
         except Exception as e:
             err_str = str(e)
             print(f"[Teacher agent] Generating attempt {attempt+1} failed for {exercise_type}: {e}")
-            # Respect retry_delay from 429 response
+           
             if "429" in err_str and "retry_delay" in err_str:
                 import re as _re
                 match = _re.search(r"seconds:\s*(\d+)", err_str)
@@ -272,17 +264,37 @@ def _validate_exercise(exercise: dict, language: str) -> list[str]:
 
             words = re.findall(r"[a-zA-ZÀ-ÿăâîșțĂÂÎȘȚ'-]+", text_to_check)
             bad = [w for w in words if len(w) > 2 and not dictionary.lookup(w)]
-            if len(bad) > 3: #sau 0?
+            if len(bad) > 3:
                 warnings.append(f"Suspicious words: {list(set(bad))[:5]}")
 
     return warnings
 
 
-async def _generate_all_async(requests, context, language, level, topic, native_lang, extra):
+async def _generate_all_async(requests, context, language, level, topic, native_lang, extra) -> list[Optional[dict]]:
+    """
+    Concurrently executes multiple exercise generation requests using Groq.
+
+    Leverages asyncio.gather to process requests in parallel, reducing the total wait time when building a full worksheet. Introduces 
+    a slight delay between requests to reduce API rate limits
+
+    Args:
+        requests (list[dict]): a list of dictionaries detailing the requested exercise types
+        context (str): the concatenated text context retrieved from the teacher's manual
+        language (str): the target language
+        level (str): the target CEFR level
+        topic (str): the specific topic for the exercises
+        native_lang (str): The students' native language
+        extra (str): additional instructions provided by the teacher
+
+    Returns:
+        list[Optional[dict]]: A list of generated exercise dictionaries
+        Failed generations will appear as None.
+    """
+
     results = []
     for i, r in enumerate(requests):
         if i > 0:
-            await asyncio.sleep(1.5)  # stagger requests to avoid hitting free-tier rate limit
+            await asyncio.sleep(1.5)
         result = await _generate_single_exercise(
             r["exercise_type"], context, language, level,
             topic, native_lang, extra,
@@ -303,7 +315,6 @@ def _run_async_safely(coro):
         return asyncio.run(coro)
 
 
-# main, ex not saved until teacher approves
 def generate_worksheet_preview(teacher_id, manual_id, exercise_counts, level, language,
     topic = "general", native_language = "romanian", page_range: Optional[tuple[int, int]] = None,
     chapter: Optional[str] = None, extra_instructions = "", conn=None,) -> dict:
@@ -400,7 +411,7 @@ def regenerate_single_preview(teacher_id: int, exercise_type: str, generation_co
     if not chunks:
         return None
 
-    selected = chunks[4:12] if len(chunks) > 12 else chunks[:8] #other chunks for diversity?
+    selected = chunks[4:12] if len(chunks) > 12 else chunks[:8]
     context = "\n---\n".join([c.payload["text"] for c in selected])
 
     result = _run_async_safely(_generate_single_exercise(

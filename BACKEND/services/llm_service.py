@@ -1,8 +1,7 @@
-# prompt for llm, without agent
-
 import os 
 from groq import Groq
 from google import genai
+from google.genai import types as genai_types
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,22 +10,16 @@ api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
   print("Error: GEMINI_API_KEY was not found in .env!")
 
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
-# TODO:
-generation_config = {
-  "response_mime_type": "application/json",
-}
-
-def generate_exercises(context_chunks, topic, level, type, language): # callied in exercise_service
+def generate_exercises(context_chunks, topic, level, type, language):
   whole_context_text = "\n---\n".join([c.payload['text'] for c in context_chunks])
 
   prompt = f"""
     You are an {language} professor. Generate an exercise of this type '{type}' for {level} level about '{topic}' in {language}.
     Use this context from textbook: {whole_context_text} to create the exercise focused only on vocabulary or grammar that appears in the context.
-    Rules: 
+    Rules:
     1. If the context doesn't have enough information, you can use it as inspiration but you should not make up content that is not related to the context.
     2. Do not ask comprehension questions. Ensure the questions are standalone and don't require reading the source text to be answered or listening to audio.
     3. Do not generate any conversational text or explanations, only the exercise in JSON format.
@@ -34,23 +27,22 @@ def generate_exercises(context_chunks, topic, level, type, language): # callied 
     {{
       "exercise_title": "...",
       "questions": [
-      {{ "question": "...", 
-          "answer": "...", 
-          "options": ["...", "..."] 
+      {{ 
+        "question": "...",
+        "answer": "...",
+        "options": ["...", "..."]
       }}
       ]
     }}
     """
-    
-    # response = client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": prompt}])
-    # return response.choices[0].message.content
-    # response = client.models.generate_content(
-    #     model="models/gemini-1.5-pro",
-    #     contents=prompt
-    # )
 
-  model = genai.GenerativeModel(model_name='gemini-2.5-flash', generation_config=generation_config)
-  response = model.generate_content(prompt)
+  response = gemini_client.models.generate_content(
+      model="gemini-2.5-flash",
+      contents=prompt,
+      config=genai_types.GenerateContentConfig(
+          response_mime_type="application/json",
+      )
+  )
   return response.text
 
   # try:

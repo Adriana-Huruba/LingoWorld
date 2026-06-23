@@ -28,13 +28,12 @@ CEFR_ORDER = ["A1", "A2", "B1", "B2", "C1", "C2"]
 
 def has_completed_quiz(user_id: int, conn) -> bool:
     with conn.cursor() as cur:
-        cur.execute("""
-            SELECT COUNT(*) AS cnt FROM initial_quiz WHERE user_id = %s""", [user_id])
+        cur.execute("SELECT COUNT(*) FROM initial_quiz WHERE user_id = %s", [user_id])
         row = cur.fetchone()
-        return (row["cnt"] or 0) > 0
+        return (row[0] or 0) > 0
 
 
-def get_quiz_exercises(language: str, conn) -> list[Exercise]: # 2 ex for each cefr level(a1->c2)
+def get_quiz_exercises(language: str, conn) -> list[Exercise]:
     if not language or not language.strip():
         raise ValueError("Language filed can't be empty.")
 

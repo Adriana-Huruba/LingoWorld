@@ -1,11 +1,10 @@
 <div class="modal-overlay" (click)="close()">
     <div class="modal-panel" (click)="$event.stopPropagation()">
+
         <div class="modal-header">
             <div>
                 <h3>{{ title }}</h3>
-                <span class="modal-progress-label">
-                    Question {{ currentQuestionIndex + 1 }} of {{ totalQuestions }}
-                </span>
+                <span class="modal-progress-label">Question {{ currentQuestionIndex + 1 }} of {{ totalQuestions }}</span>
             </div>
             <button class="btn-close" (click)="close()">
                 <nz-icon nzType="close" nzTheme="outline" />
@@ -21,63 +20,186 @@
                 <nz-icon nzType="trophy" nzTheme="outline" class="trophy-icon" />
                 <h3>Assignment complete!</h3>
                 <p class="score-text">You scored <strong>{{ score }} / {{ totalQuestions }}</strong></p>
-
-                @if (score === totalQuestions) {
-                    <p class="score-message perfect">Perfect score! Excellent work</p>
-                } @else if (score >= totalQuestions / 2) {
-                    <p class="score-message good">Good job! Keep practicing</p>
-                } @else {
-                    <p class="score-message low">Keep it up — review the material and try again</p>
-                }
-                <button class="btn-primary" (click)="close()">Back to classroom</button>
+                <button class="btn-primary" (click)="close()" style="margin-top: 20px;">Back to classroom</button>
             </div>
 
         } @else if (currentQuestion) {
+
             <div class="question-block">
-                <p class="question-text">{{ currentQuestion.question }}</p>
-                <div class="options-list">
-                    @for (option of currentQuestion.options; track option; let i = $index) {
-                        <button class="option-btn"
-                            [class.selected]="selectedOption === option && !answered"
-                            [class.correct]="answered && option === currentQuestion.answer"
-                            [class.wrong]="answered && selectedOption === option && option !== currentQuestion.answer"
+                
+                <div class="badges-container">
+                    <span class="badge level-badge">
+                        {{ currentQuestion.level || 'Practice' }}
+                    </span>
+                    <span class="badge topic-badge">
+                        {{ (currentQuestion.topic || title) | uppercase }}
+                    </span>
+                </div>
+
+                <div class="exercise-header-row">
+                    <h3 class="exercise-main-title">{{ currentQuestion.exercise_title }}</h3>
+                    <button class="btn-discrete-vocab" (click)="toggleVocabForm()" title="Save word to vocabulary">
+                        <nz-icon nzType="book" nzTheme="outline" />
+                    </button>
+                </div>
+
+                @if(showVocabForm) {
+                    <div class="discrete-vocab-form fade-in">
+                        @if(vocabSuccess) {
+                            <span class="success-text"><nz-icon nzType="check-circle" /> Saved!</span>
+                        } @else {
+                            <nz-icon nzType="edit" style="color: #94a3b8;" />
+                            <input type="text" [(ngModel)]="vocabTarget" placeholder="Foreign word">
+                            <span style="color: #cbd5e1; margin: 0 8px;">|</span>
+                            <input type="text" [(ngModel)]="vocabNative" placeholder="Translation" (keyup.enter)="saveToVocab()">
+                            <button class="btn-save-mini" (click)="saveToVocab()" [disabled]="!vocabTarget || !vocabNative">Save</button>
+                        }
+                    </div>
+                }
+
+                <div class="selectable-area" (mouseup)="onTextSelect()">
+
+                    @if (currentQuestion.type === 'multiple-choice') {
+                        <p class="question-text"><strong>Exercise:</strong> {{ currentQuestion.question }}</p>
+
+                        <div class="options-list">
+                            @for (option of currentQuestion.options; track $index) {
+                                <button class="option-btn"
+                                    [class.selected]="selectedOption === option && !answered"
+                                    [class.correct]="answered && option === currentQuestion.answer"
+                                    [class.wrong]="answered && selectedOption === option && option !== currentQuestion.answer"
+                                    [disabled]="answered"
+                                    (click)="selectOption(option)">
+                                    {{ option }}
+                                </button>
+                            }
+                        </div>
+                    }
+
+                    @if (currentQuestion.type === 'translation' || currentQuestion.type === 'fill-in-the-blank') {
+                        @if (currentQuestion.type === 'translation' && currentQuestion.base_sentence) {
+                            <p class="question-text"><strong>Exercise:</strong> {{ currentQuestion.base_sentence }}</p>
+                        } @else {
+                            <p class="question-text"><strong>Exercise:</strong> {{ currentQuestion.question }}</p>
+                        }
+
+                        <textarea
+                            class="text-answer-input"
+                            [(ngModel)]="textAnswer"
                             [disabled]="answered"
-                            (click)="selectOption(option)">
-                            <span class="option-label">{{ getOptionLabel(i) }}</span>
-                            {{ option }}
+                            placeholder="Type your answer here..."
+                            rows="3">
+                        </textarea>
+                    }
+
+                    @if (currentQuestion.type === 'match') {
+                        <p class="question-text"><strong>Exercise:</strong> Match each word with its correct definition.</p>
+                        
+                        @if (userPairs.length > 0) {
+                            <div class="matched-pairs">
+                                @for (pair of userPairs; track pair.target) {
+                                    <div class="matched-row"
+                                        [class.pair-correct]="answered && isPairCorrect(pair)"
+                                        [class.pair-wrong]="answered && !isPairCorrect(pair)">
+                                        <span>{{ pair.target }}</span>
+                                        <nz-icon nzType="arrow-right" nzTheme="outline" />
+                                        <span>{{ pair.native }}</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        @if (!answered) {
+                            <div class="match-columns">
+                                <div class="match-col">
+                                    @for (pair of currentQuestion.pairs; track pair.target) {
+                                        @if (!isTargetMatched(pair.target)) {
+                                            <button class="match-btn"
+                                                [class.match-selected]="selectedTarget === pair.target"
+                                                (click)="selectTarget(pair.target)">
+                                                {{ pair.target }}
+                                            </button>
+                                        }
+                                    }
+                                </div>
+                                <div class="match-col">
+                                    @for (native of shuffledNatives; track native) {
+                                        @if (!isNativeMatched(native)) {
+                                            <button class="match-btn"
+                                                [class.match-selected]="selectedNative === native"
+                                                (click)="selectNative(native)">
+                                                {{ native }}
+                                            </button>
+                                        }
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="match-hint">
+                                @if (selectedTarget && !selectedNative) {
+                                    <span>Now select a match from the right column</span>
+                                } @else if (!selectedTarget) {
+                                    <span>Select a word from the left column</span>
+                                }
+                            </div>
+                        }
+                    }
+
+                </div> @if (answered) {
+                    <div class="answer-feedback fade-in" [class.feedback-correct]="isCorrect" [class.feedback-wrong]="!isCorrect">
+                        @if (isCorrect) {
+                            Correct! 
+                            @if (feedbackData) {
+                                ELO: {{ feedbackData.oldElo }} ➔ {{ feedbackData.newElo }} ({{ feedbackData.deltaElo >= 0 ? '+' : '' }}{{ feedbackData.deltaElo }})
+                                @if (authService.userRole() === 'adult_learner') {
+                                    | Quality: {{ feedbackData.quality }} | Next review: {{ feedbackData.nextInterval }} day(s)
+                                }
+                            }
+                        } @else {
+                            Wrong! Right answer: <strong>{{ currentQuestion.answer }}</strong>.
+                            @if (feedbackData) {
+                                ELO: {{ feedbackData.oldElo }} ➔ {{ feedbackData.newElo }} ({{ feedbackData.deltaElo >= 0 ? '+' : '' }}{{ feedbackData.deltaElo }})
+                            }
+                        }
+                    </div>
+                }
+
+                @if(hint) {
+                    <div class="hint-box fade-in">
+                        <strong>Hint:</strong> {{ hint }}
+                    </div>
+                }
+                @if(hintLoading) {
+                    <div class="hint-loading fade-in">Generating hint...</div>
+                }
+
+                <div class="action-stack">
+                    @if (!answered) {
+                        <button class="btn-secondary" (click)="useHint()" [disabled]="usedHint || hintLoading">
+                            <nz-icon nzType="bulb" nzTheme="outline" style="margin-right: 6px;"/>
+                            {{ usedHint ? 'Hint used' : 'Use Hint' }}
+                        </button>
+                        
+                        @if (currentQuestion.type === 'multiple-choice') {
+                            <button class="btn-primary" [disabled]="!selectedOption" (click)="confirmMultipleChoice()">Check answers</button>
+                        }
+                        @if (currentQuestion.type === 'translation' || currentQuestion.type === 'fill-in-the-blank') {
+                            <button class="btn-primary" [disabled]="!textAnswer.trim()" (click)="confirmTextAnswer()">Check answers</button>
+                        }
+                        @if (currentQuestion.type === 'match') {
+                            @if(userPairs.length > 0) {
+                                <button class="btn-secondary" (click)="undoLastPair()">Undo last match</button>
+                            }
+                            <button class="btn-primary" [disabled]="!allPairsMatched" (click)="confirmMatch()">Check matches</button>
+                        }
+                    } @else {
+                        <button class="btn-next fade-in" (click)="nextQuestion()">
+                            {{ currentQuestionIndex < totalQuestions - 1 ? 'Next exercise' : 'Finish assignment' }}
+                            <nz-icon nzType="arrow-right" nzTheme="outline" />
                         </button>
                     }
                 </div>
 
-                @if (answered) {
-                    <div class="answer-feedback" [class.feedback-correct]="isCorrect" [class.feedback-wrong]="!isCorrect">
-                        @if (isCorrect) {
-                            <nz-icon nzType="check-circle" nzTheme="outline" /> Correct!
-                        } @else {
-                            <nz-icon nzType="close-circle" nzTheme="outline" />
-                            Wrong. The correct answer is: <strong>{{ currentQuestion.answer }}</strong>
-                        }
-                    </div>
-                }
-            </div>
-
-            <div class="modal-footer">
-                @if (!answered) {
-                    <button
-                        class="btn-primary"
-                        [disabled]="!selectedOption"
-                        (click)="confirmAnswer()">
-                        Confirm answer
-                    </button>
-                } @else {
-                    <button class="btn-primary" (click)="nextQuestion()">
-                        @if (currentQuestionIndex < totalQuestions - 1) {
-                            Next question
-                        } @else {
-                            Finish assignment
-                        }
-                    </button>
-                }
             </div>
         }
     </div>

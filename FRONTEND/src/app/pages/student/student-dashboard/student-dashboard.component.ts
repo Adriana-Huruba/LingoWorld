@@ -9,6 +9,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { AuthService } from '../../../core/services/auth.service';
 import { ClassroomService } from '../../../core/services/classroom.service';
+import { StudentClassroom } from '../../../core/interfaces/classroom.interface';
 
 @Component({
   selector: 'app-student-dashboard',
@@ -23,11 +24,13 @@ export class StudentDashboardComponent {
   private router = inject(Router);
 
   student = this.authService.currentUser;
-  classrooms: any[] = [];
-  
+  allClassrooms: StudentClassroom[] = [];
+  classrooms: StudentClassroom[] = [];
+
   searchText = '';
   isModalVisible = false;
   inviteCode = '';
+  viewMode: 'grid' | 'list' = 'grid';
 
   ngOnInit(): void {
     this.loadClassrooms();
@@ -68,18 +71,21 @@ export class StudentDashboardComponent {
     const studentId = this.authService.userId;
     this.classroomService.getStudentClassrooms(studentId).subscribe({
       next: (data) => {
-        this.classrooms = data.classrooms;
+        this.allClassrooms = data.classrooms;
+        this.classrooms = [...this.allClassrooms];
       },
       error: () => this.message.error('Could not load the classes.')
     });
   }
 
   filterText(): void {
-    console.log('Filter:', this.searchText);
+    const term = this.searchText.trim().toLowerCase();
+    this.classrooms = term
+      ? this.allClassrooms.filter(c => c.name?.toLowerCase().includes(term))
+      : [...this.allClassrooms];
   }
 
   navigateToClassroom(id: number): void {
-    console.log('Navigation to course:', id);
     this.router.navigate(['/class', id]);
   }
 }

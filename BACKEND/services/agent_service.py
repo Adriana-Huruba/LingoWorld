@@ -8,6 +8,7 @@ from langgraph.graph import StateGraph, END
 from langgraph.graph.state import CompiledStateGraph
 
 from google import genai
+from google.genai import types as genai_types
 from dotenv import load_dotenv
 
 from core.embeddings import create_embedding
@@ -199,6 +200,19 @@ def _build_match_prompt(state: ExerciseAgentState, whole_context: str) -> str:
 
 
 def fetch_context_node(state: ExerciseAgentState) -> ExerciseAgentState:
+    """
+    Retrieves relevant textbook context from the vector database using semantic search.
+
+    Constructs a query based on the current state (language, level, skill, topic) and fetches similar chunks from Qdrant.
+    It randomly selects a subset of retrieved chunks to ensure variety in exercise generation.
+
+    Args:
+        state (ExerciseAgentState): the current state of the LangGraph agent
+
+    Returns:
+        ExerciseAgentState: The updated state containing the retrieved context chunks/an error if context is insufficient 
+    """
+
     query = f"{state['language']} {state['level']} {state['skill_type'] or ''} {state['topic'] or ''}".strip()
     
     vector = create_embedding(query)
@@ -219,18 +233,31 @@ def fetch_context_node(state: ExerciseAgentState) -> ExerciseAgentState:
     if state["topic"] and state["topic"] != "general":
         actual_topic = state["topic"]
     else:
-        payload.get("topic", "general")
+        actual_topic = payload.get("topic", "general")
 
     if state["skill_type"] and state["skill_type"] != "general":
         actual_skill = state["skill_type"]
     else:
-        payload.get("skill_type", "general")
+        actual_skill = payload.get("skill_type", "general")
 
     print(f"[Agent] topic from textbook: '{actual_topic}', skill: '{actual_skill}'")
     return {**state, "context_chunks": selected_chunks, "topic": actual_topic, "skill_type": actual_skill, "error": None}
 
 
 def generate_node(state: ExerciseAgentState) -> ExerciseAgentState:
+    """
+    Calls the Gemini LLM to generate an exercise based on the retrieved context.
+
+    Builds a specialized prompt depending on the requested exercise type and incorporates any previous validation errors if this is a retry attempt.
+
+    Args:
+        state (ExerciseAgentState): The current state containing context chunks 
+        and exercise configuration.
+
+    Returns:
+        ExerciseAgentState: The updated state containing the raw JSON string returned by the LLM/an error message if the API call fails
+    """
+
     chunks = state["context_chunks"]
     whole_context = "\n---\n".join([c.payload["text"] for c in chunks])
     system_prompt=f" You are a language teacher creating materials for a {state['level']} level student learning {state['language']}."
@@ -251,14 +278,22 @@ def generate_node(state: ExerciseAgentState) -> ExerciseAgentState:
         for err in state["validation_errors"]:
             prompt += f"- {err}\n"
 
-    model = genai.GenerativeModel(
-        "gemini-2.5-flash", 
-        system_instruction=system_prompt,
-        config={"response_mime_type": "application/json"}
-    )
-    response = model.generate_content(prompt)
-
-    return {**state, "raw_json": response.text.strip()}
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=genai_types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                response_mime_type="application/json",
+            )
+        )
+        raw_text = response.text
+        if not raw_text:
+            return {**state, "raw_json": "", "validation_errors": ["Gemini returned empty response (possible safety block)"]}
+        return {**state, "raw_json": raw_text.strip()}
+    except Exception as e:
+        print(f"[Agent][generate] Gemini API error: {e}")
+        return {**state, "raw_json": "", "validation_errors": [f"Gemini API error: {e}"]}
 
 
 def validate_node(state: ExerciseAgentState) -> ExerciseAgentState:
@@ -355,7 +390,18 @@ def save_node(state: ExerciseAgentState) -> ExerciseAgentState:
             content["options"] = exercise.get("options", [])
         correct_answer = exercise.get("answer", "")
 
-    ex_id = ExerciseDAO.insert_exercise(    #TODO: check again in db
+    # Skip DB insert when conn=None (e.g. during tests)
+    if conn is None:
+        result = {
+            "type": state["exercise_type"],
+            "language": state["language"],
+            "level": specific_level,
+            "content": content,
+            "correct_answer": correct_answer,
+        }
+        return {**state, "exercise": {**exercise, **result}, "saved_exercise_id": None, "error": None}
+
+    ex_id = ExerciseDAO.insert_exercise(
         language=state["language"].lower(),
         level=specific_level,
         exercise_type=state["exercise_type"].replace("_", "-"),
@@ -368,10 +414,12 @@ def save_node(state: ExerciseAgentState) -> ExerciseAgentState:
         conn=conn,
     )
 
-    print(f"DEBUG save_node: insert_exercise returned ex_id = {ex_id}")
-
     if not ex_id:
         return {**state, "error": "save_failed"}
+
+    saved = ExerciseDAO.find_by_id(ex_id, conn)
+    if saved:
+        return {**state, "exercise": saved, "saved_exercise_id": ex_id, "error": None}
     return {**state, "saved_exercise_id": ex_id, "error": None}
 
 
@@ -411,40 +459,108 @@ def build_exercise_agent() -> CompiledStateGraph:
 _agent = build_exercise_agent()
 
 
-def run_exercise_agent(user_id, topic, level, exercise_type, language, skill_type, native_language="romanian", conn=None) -> Optional[dict]:
-    result = _agent.invoke({
-        "user_id": user_id, "topic": topic, "level": level, "exercise_type": exercise_type,
-        "language": language, "native_language": native_language, "skill_type": skill_type,
-        "conn": conn, "context_chunks": [], "raw_json": "", "exercise": {},
-        "retry_count": 0, "validation_errors": [], "saved_exercise_id": None, "error": None,
-    })
+def run_exercise_agent(user_id: int, topic: str, level: str, exercise_type: str, language: str, skill_type: Optional[str], conn, native_language: str = "romanian") -> Optional[dict]:
+    """
+    Invokes the LangGraph exercise generation agent for independent learners.
 
-    print("LLM raw_json:", result.get("raw_json"))
-    print("Parsed exercise:", result.get("exercise"))
-    print("DEBUG: saved_exercise_id =", result.get("saved_exercise_id"))
-    print("DEBUG: error =", result.get("error"))
+    Initializes the agent's state with the user's request parameters and triggers the RAG pipeline
 
-    if result.get("error") or not result.get("saved_exercise_id"):
-        print(f"Agent error: {result.get('error')}. Errors: {result.get('validation_errors')}")
+    Args:
+        user_id (int): the ID of the user requesting the exercise
+        topic (str): the specific topic to generate the exercise for
+        level (str): the CEFR level of the user
+        exercise_type (str): the type of exercise to generate (multiple-choice, fill-in-the=blank)
+        language (str): the target language being learned
+        skill_type (Optional[str]): the specific skill area (grammar, vocabulary)
+        conn: the database connection object
+        native_language (str, optional): the user's native language. Defaults to "romanian"
+
+    Returns:
+        Optional[dict]: The generated and validated exercise dictionary, 
+        or None if generation fails.
+    """
+
+    initial_state: ExerciseAgentState = {
+        "user_id": user_id,
+        "topic": topic,
+        "level": level,
+        "exercise_type": exercise_type,
+        "language": language,
+        "native_language": native_language,
+        "skill_type": skill_type,
+        "conn": conn,
+        "context_chunks": [],
+        "raw_json": "",
+        "exercise": {},
+        "retry_count": 0,
+        "validation_errors": [],
+        "saved_exercise_id": None,
+        "error": None,
+    }
+    final_state = _agent.invoke(initial_state)
+    if final_state.get("error"):
+        print(f"[Agent] Error: {final_state['error']}")
         return None
+    return final_state.get("exercise") or None
 
-    print(f"DEBUG: About to find_by_id({result['saved_exercise_id']}, conn)") 
-    found = ExerciseDAO.find_by_id(result["saved_exercise_id"], conn)
-    print(f"DEBUG: find_by_id returned: {found}") 
 
-    return found
+def generate_hint(exercise_type: str, question: str, options: list, level: str, language: str, native_language: str = "romanian") -> str:
+    """
+    Generates a pedagogical hint for an exercise without revealing the correct answer.
+    - multiple-choice: eliminates one wrong option and gives a grammatical/semantic clue
+    - fill-in-the-blank: gives the first letter and grammatical category of the answer
+    - translation: gives a key word translation hint
+    """
+    if exercise_type == "multiple-choice":
+        options_str = ", ".join(f'"{o}"' for o in options) if options else "N/A"
+        prompt = f"""
+            You are a language teacher helping a {level} level student learning {language}.
+            The student is working on this exercise:
+            "{question}"
+            Options: {options_str}
 
-    # exercise = json.loads(result["raw_json"]) #for test
-    # # print(json.dumps(exercise, indent=2, ensure_ascii=False))
+            Give a SHORT hint (1-2 sentences) that:
+            1. Eliminates ONE obviously wrong option by briefly explaining why it's incorrect
+            2. Gives a grammatical or semantic clue pointing toward the right answer
+            DO NOT reveal the correct answer directly.
+            Write the hint in {native_language}.
+        """
+    elif exercise_type == "fill-in-the-blank":
+        prompt = f"""
+            You are a language teacher helping a {level} level student learning {language}.
+            The student is working on this fill-in-the-blank exercise:
+            "{question}"
 
-# for test
-if __name__ == '__main__':
-    run_exercise_agent(
-        user_id=0,
-        topic="family",
-        level= "A1",
-        exercise_type="multiple-choice",
-        language= "spanish",
-        native_language="romanian",
-        skill_type= "vocabulary"
+            Give a SHORT hint (1-2 sentences) that:
+            1. States the grammatical category of the missing word (verb, noun, preposition, etc.)
+            2. Gives the first letter of the correct answer
+            DO NOT reveal the full answer.
+            Write the hint in {native_language}.
+        """
+    elif exercise_type == "translation":
+        prompt = f"""
+            You are a language teacher helping a {level} level student learning {language}.
+            The student needs to translate:
+            "{question}"
+
+            Give a SHORT hint (1-2 sentences) that:
+            1. Translates one key word from the sentence
+            2. Gives a structural clue about the sentence
+            DO NOT give the full translation.
+            Write the hint in {native_language}.
+        """
+    else:
+        prompt = f"""
+            You are a language teacher. Give a short 1-sentence hint for this exercise without revealing the answer:
+            "{question}"
+            Write in {native_language}.
+        """
+
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt,
+        config=genai_types.GenerateContentConfig(
+            system_instruction="You are a helpful language teacher.",
+        )
     )
+    return response.text.strip()

@@ -41,7 +41,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-# ── Build a minimal app with only the routers under test ─────────
 from api.exercises_routes import exercises_router
 from api.user_routes import user_router, classroom_router
 

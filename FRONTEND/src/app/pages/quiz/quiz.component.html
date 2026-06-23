@@ -43,55 +43,18 @@
       <p>We are preparing exercises for {{ selectedLanguage.name }} at level {{ selectedLevel.id }}...</p>
     }
 
-    @if (currentStep === 'quiz' && currentExercise) 
-    {
-      <div class="step-quiz">
-        <div class="progress-bar">
-          <div class="progress-fill" [style.width.%]="progressPercent"></div>
-        </div>
-        <div class="progress-info">
-          <span>{{ currentIndex + 1 }} / {{ exercises.length }}</span>
-          <span class="level-badge">
-            {{ currentExercise.level }}
-          </span>
-        </div>
-  
-        <h3 class="exercise-title">
-          {{ currentExercise.content.exercise_title }}
-        </h3>
-  
-        @if (currentQuestion) {
-          <p class="question-text">{{ currentQuestion.question }}</p>
-  
-          @if (currentExercise.type === 'multiple-choice') 
-          {
-            <div class="options-list">
-              @for (opt of currentQuestion.options; track opt; let i = $index) 
-              {
-                <button class="option-btn" [class.selected]="selectedOption === opt" (click)="selectOption(opt)">
-                  <span class="opt-label">{{ getOptionLabel(i) }}</span>
-                  {{ opt }}
-                </button>
-              }
-            </div>
-          }
-  
-          @if (currentExercise.type === 'fill-in-the-blank' || currentExercise.type === 'translation') 
-          {
-            <input type="text" class="text-input" [(ngModel)]="textAnswer" (keydown.enter)="canSubmit && confirmAnswer()" placeholder="Your answer..."/>
-          }
-        }
-  
-        <button class="btn-primary" [disabled]="!canSubmit" (click)="confirmAnswer()">
-          {{ isLastExercise ? 'Finish' : 'Next' }}
-        </button>
-      </div>
+    @if (currentStep === 'quiz') {
+      <app-universal-player
+        [preloadedExercises]="exercises"
+        [title]="'Initial Level Quiz'"
+        [mode]="QuizMode.INITIAL_QUIZ"
+        (completed)="onQuizCompleted($event)">
+      </app-universal-player>
     }
  
     @if (currentStep === 'result' && result) 
     {
       <div class="step-result">
-        <div class="result-icon">✓</div>
         <h2>Your estimated level</h2>
   
         <div class="level-display">

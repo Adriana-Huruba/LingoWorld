@@ -6,10 +6,11 @@ from pydantic import BaseModel
 from pypdf import PdfReader
 
 from core.database import get_db
-from dao.teacher_dao import TeacherDAO
+from core.security import get_current_user
 from services.teacher_service import TeacherService
 from repository.teacher_repository import TeacherRepository
 from services.didactic_agent import generate_worksheet_preview, regenerate_single_preview
+from services.vector_service import delete_teacher_material_chunks
 
 teacher_router = APIRouter()
 
@@ -54,7 +55,7 @@ class PublishRequest(BaseModel):
 
 
 @teacher_router.post("/manuals/upload", status_code=201)
-async def upload_manual(file: UploadFile = File(...), teacher_id: int = Form(...), title: str = Form(...), language: str = Form(...), level: str = Form(...), conn = Depends(get_db)):
+async def upload_manual(file: UploadFile = File(...), teacher_id: int = Form(...), title: str = Form(...), language: str = Form(...), level: str = Form(...), conn=Depends(get_db), _=Depends(get_current_user)):
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
 
@@ -64,12 +65,11 @@ async def upload_manual(file: UploadFile = File(...), teacher_id: int = Form(...
         content = await file.read()
         f.write(content)
 
-    #validation
     try:
         reader = PdfReader(filepath)
         sample_text = ""
 
-        pages_to_check = min(3, len(reader.pages)) #checking the first 3 pgs
+        pages_to_check = min(3, len(reader.pages))
         for i in range(pages_to_check):
             sample_text += reader.pages[i].extract_text() or ""
         
@@ -82,7 +82,7 @@ async def upload_manual(file: UploadFile = File(...), teacher_id: int = Form(...
             )
             
     except HTTPException:
-        raise  # sends error to fe
+        raise
     except Exception:
         if os.path.exists(filepath):
             os.remove(filepath)
@@ -91,6 +91,8 @@ async def upload_manual(file: UploadFile = File(...), teacher_id: int = Form(...
     try:
         result = TeacherService.process_and_ingest_manual(pdf_path=filepath, teacher_id=teacher_id, language=language, level=level, title=title, conn=conn)
         return result
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
@@ -99,15 +101,32 @@ async def upload_manual(file: UploadFile = File(...), teacher_id: int = Form(...
 
 
 @teacher_router.get("/manuals")
-def list_manuals(teacher_id: int, conn = Depends(get_db)):
+def list_manuals(teacher_id: int, conn=Depends(get_db), _=Depends(get_current_user)):
     try:
         return TeacherRepository.list_manuals(teacher_id, conn)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@teacher_router.delete("/manuals/{manual_id}", status_code=200)
+def delete_manual(manual_id: int, teacher_id: int, conn=Depends(get_db), _=Depends(get_current_user)):
+    try:
+        manual = TeacherRepository.get_manual_by_id(manual_id, teacher_id, conn)
+        if not manual:
+            raise HTTPException(status_code=404, detail="Manual not found or not owned by you")
+        delete_teacher_material_chunks(manual_id)
+        deleted = TeacherRepository.delete_manual(manual_id, teacher_id, conn)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Manual not found or not owned by you")
+        return {"detail": "Manual deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @teacher_router.get("/manuals/{manual_id}")
-def get_manual(manual_id: int, teacher_id: int, conn = Depends(get_db)):
+def get_manual(manual_id: int, teacher_id: int, conn=Depends(get_db), _=Depends(get_current_user)):
     try:
         manual = TeacherRepository.get_manual_by_id(manual_id, teacher_id, conn)
         if not manual:
@@ -118,7 +137,7 @@ def get_manual(manual_id: int, teacher_id: int, conn = Depends(get_db)):
     
 
 @teacher_router.post("/worksheets/preview")
-def preview_worksheet(payload: PreviewRequest, conn = Depends(get_db)):
+def preview_worksheet(payload: PreviewRequest, conn=Depends(get_db), _=Depends(get_current_user)):
     try:
         page_range = tuple(payload.page_range) if payload.page_range else None
         result = generate_worksheet_preview(
@@ -144,7 +163,7 @@ def preview_worksheet(payload: PreviewRequest, conn = Depends(get_db)):
 
 
 @teacher_router.post("/worksheets/regenerate-item")
-def regenerate_item(payload: RegenerateRequest, conn = Depends(get_db)):
+def regenerate_item(payload: RegenerateRequest, conn=Depends(get_db), _=Depends(get_current_user)):
     try:
         result = regenerate_single_preview(
             teacher_id=payload.teacher_id,
@@ -162,7 +181,7 @@ def regenerate_item(payload: RegenerateRequest, conn = Depends(get_db)):
 
 
 @teacher_router.post("/worksheets/publish", status_code=201)
-def publish_worksheet(payload: PublishRequest, conn = Depends(get_db)):
+def publish_worksheet(payload: PublishRequest, conn=Depends(get_db), _=Depends(get_current_user)):
     try:
         result = TeacherRepository.publish_complete_worksheet(payload, conn)
         return result
@@ -173,7 +192,7 @@ def publish_worksheet(payload: PublishRequest, conn = Depends(get_db)):
 
 
 @teacher_router.get("/worksheets")
-def list_worksheets(teacher_id: int, conn = Depends(get_db)):
+def list_worksheets(teacher_id: int, conn=Depends(get_db), _=Depends(get_current_user)):
     try:
         return TeacherRepository.list_worksheets(teacher_id, conn)
     except Exception as e:
@@ -181,9 +200,9 @@ def list_worksheets(teacher_id: int, conn = Depends(get_db)):
 
 
 @teacher_router.get("/worksheets/{worksheet_id}/progress")
-def get_worksheet_progress(worksheet_id: int, teacher_id: int, conn = Depends(get_db)):
+def get_worksheet_progress(worksheet_id: int, teacher_id: int, conn=Depends(get_db), _=Depends(get_current_user)):
     try:
-        result = TeacherDAO.get_worksheet_progress(worksheet_id, teacher_id, conn)
+        result = TeacherRepository.get_worksheet_progress(worksheet_id, teacher_id, conn)
         if not result:
             raise HTTPException(status_code=403, detail="Not authorized or worksheet not found")
         return result

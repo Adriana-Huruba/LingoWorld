@@ -38,5 +38,5 @@ class ExerciseRepository:
             content, correct_answer, elo_difficulty, source_manual, conn)
     
     @staticmethod
-    def get_all_topics(conn) -> list[str]:
-        return ExerciseDAO.get_all_topics(conn)
+    def get_all_topics(conn, language: str = None, levels: list[str] = None) -> list[str]:
+        return ExerciseDAO.get_all_topics(conn, language=language, levels=levels)

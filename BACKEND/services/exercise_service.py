@@ -2,9 +2,6 @@ from typing import Optional
 
 from entities.exercise import Exercise
 from repository.exercise_repository import ExerciseRepository
-from core.embeddings import create_embedding
-from services.vector_service import search_similar
-from services.llm_service import generate_exercises as llm_generate
 from services.agent_service import run_exercise_agent
 
 
@@ -33,7 +30,7 @@ def _validate(topic, level, exercise_type):
     if exercise_type not in VALID_TYPES:
         raise ValueError(f"Type of exercise is invalid: '{exercise_type}'. Accepted types: {sorted(VALID_TYPES)}")
 
-# using the agent (agent_service)
+
 def get_or_generate_exercise(user_id, topic, level, language, exercise_type: str = "multiple-choice", skill_type: Optional[str] = None, native_language: str = "romanian", conn=None) -> Optional[Exercise]:
     _validate(topic, level, exercise_type)
 
@@ -58,97 +55,19 @@ def get_or_generate_exercise(user_id, topic, level, language, exercise_type: str
     return Exercise.from_row({**result, "reason": "newly_generated"})
 
 
-# using only llm (llm_service)
-# def get_or_generate_exercise(user_id, topic, level, language, exercise_type: str = "multiple-choice", skill_type: Optional[str] = None, conn = None) -> Optional[Exercise]:
-#     _validate(topic, level, exercise_type)
+_CEFR_ORDER = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 
-#     if conn:
-#         existing = ExerciseRepository.find_new(
-#             user_id=user_id,
-#             user_elo=cefr_to_elo_difficulty(level),
-#             target_levels=[level],
-#             language=language.lower(),
-#             skill_type=skill_type,
-#             topic=topic,
-#             conn=conn,
-#         )
-#         if existing:
-#             existing.reason = "from_database"
-#             return existing
+def _zpd_levels(level: str) -> list[str]:
+    """Return the user's current CEFR level plus one above (ZPD zone)"""
+    try:
+        idx = _CEFR_ORDER.index(level.upper())
+    except ValueError:
+        return _CEFR_ORDER
+    result = [_CEFR_ORDER[idx]]
+    if idx + 1 < len(_CEFR_ORDER):
+        result.append(_CEFR_ORDER[idx + 1])
+    return result
 
-#     query_vector = create_embedding(topic)
-#     relevant_chunks = search_similar(vector=query_vector, language=language.lower(), level=level, skill_type=skill_type)
-
-#     if not relevant_chunks:
-#         return None
-
-#     raw = llm_generate(context_chunks=relevant_chunks, topic=topic, level=level, type=exercise_type, language=language)
-
-#     try:
-#         content = json.loads(raw)
-#     except json.JSONDecodeError:
-#         return None
-
-#     questions = content.get("questions", [])
-#     if not questions:
-#         return None
-
-#     exercise_title = content.get("exercise_title", "Exercise")
-
-#     chunk_payload = relevant_chunks[0].payload
-#     chunk_skill = chunk_payload.get("skill_type", skill_type or "general")
-#     chunk_topic = chunk_payload.get("topic", topic)
-#     chunk_source = chunk_payload.get("source", "")
-#     elo_diff = cefr_to_elo_difficulty(level)
-
-#     saved_exercises = [] # each ex saved separately
-
-#     if conn:
-#         for q in questions:
-#             single_content = {
-#                 "exercise_title": exercise_title,
-#                 "questions": [q]
-#             }
-#             correct_ans = q.get("answer", "")
-
-#             ex_id = ExerciseDAO.insert_exercise(
-#                 language=language.lower(),
-#                 level=level,
-#                 exercise_type=exercise_type,
-#                 category=chunk_skill,
-#                 topic=chunk_topic,
-#                 content=single_content,
-#                 correct_answer=correct_ans,
-#                 elo_difficulty=elo_diff,
-#                 source_manual=chunk_source,
-#                 conn=conn,
-#             )
-            
-#             if ex_id:
-#                 saved_exercises.append({
-#                     "id": ex_id,
-#                     "content": single_content,
-#                     "correct_answer": correct_ans
-#                 })
-
-#     if not saved_exercises:
-#         return None
-
-#     first_ex = saved_exercises[0]
-#     return Exercise(
-#         exercise_id=first_ex["id"],
-#         language=language.lower(),
-#         level=level,
-#         type=exercise_type,
-#         category=chunk_skill,
-#         topic=chunk_topic,
-#         content=first_ex["content"],
-#         correct_answer=first_ex["correct_answer"],
-#         elo_difficulty=elo_diff,
-#         source_manual=chunk_source,
-#         reason="newly_generated",
-#     )
-
-
-def get_all_topics(conn) -> list[str]:
-    return ExerciseRepository.get_all_topics(conn)
+def get_all_topics(conn, language: str = None, level: str = None) -> list[str]:
+    levels = _zpd_levels(level) if level else None
+    return ExerciseRepository.get_all_topics(conn, language=language, levels=levels)

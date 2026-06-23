@@ -53,7 +53,7 @@ class ExerciseDAO:
                     (user_id, user_elo, levels, language, skill_type, topic)
                 )
                 row = cur.fetchone()
-                if not row: 
+                if not row:
                     return None
                 columns = [desc[0] for desc in cur.description]
                 return dict(zip(columns, row))
@@ -70,7 +70,7 @@ class ExerciseDAO:
                     (user_id, user_elo, levels, language, skill_type, topic)
                 )
                 row = cur.fetchone()
-                if not row: 
+                if not row:
                     return None
                 columns = [desc[0] for desc in cur.description]
                 return dict(zip(columns, row))
@@ -86,7 +86,7 @@ class ExerciseDAO:
                     (user_id, user_elo, levels, language, skill_type, topic)
                 )
                 row = cur.fetchone()
-                if not row: 
+                if not row:
                     return None
                 columns = [desc[0] for desc in cur.description]
                 return dict(zip(columns, row))
@@ -147,6 +147,18 @@ class ExerciseDAO:
                     user_id, exercise_id, assignment_id, is_correct, xp_gained, response_time_seconds, next_review_at, consecutive_correct, attempt_number,
                     easiness_factor, last_interval, quality, used_hint, new_elo, new_cefr, new_total_responses, new_xp
                 ))
+                # Stamp elo_after on the row just inserted by the stored procedure.
+                # Uses the highest id for this user+exercise (inserted milliseconds ago).
+                cur.execute("""
+                    UPDATE public.user_progress
+                    SET elo_after = %s
+                    WHERE id = (
+                        SELECT id FROM public.user_progress
+                        WHERE user_id = %s AND exercise_id = %s
+                        ORDER BY id DESC
+                        LIMIT 1
+                    )
+                """, (new_elo, user_id, exercise_id))
                 conn.commit()
                 return True
         except Exception as e:
@@ -169,12 +181,43 @@ class ExerciseDAO:
             return False
         
     @staticmethod
-    def get_all_topics(conn) -> list[str]:
+    def get_all_topics(conn, language: str = None, levels: list[str] = None) -> list[str]:
         try:
             with conn.cursor() as cur:
-                cur.execute("SELECT * FROM get_all_topics();")
+                conditions = ["topic IS NOT NULL", "TRIM(topic) <> ''"]
+                params: list = []
+
+                if language:
+                    conditions.append("LOWER(language) = LOWER(%s)")
+                    params.append(language)
+
+                if levels:
+                    placeholders = ",".join(["%s"] * len(levels))
+                    conditions.append(f"UPPER(level) = ANY(ARRAY[{placeholders}]::text[])")
+                    params.extend([l.upper() for l in levels])
+
+                where = " AND ".join(conditions)
+                cur.execute(
+                    f"SELECT DISTINCT LOWER(TRIM(topic)) FROM exercises WHERE {where} ORDER BY 1",
+                    params,
+                )
                 rows = cur.fetchall()
                 return [row[0] for row in rows]
         except Exception as e:
             print(f"[ExerciseDAO.get_all_topics] {e}")
             return []
+        
+    @staticmethod
+    def get_user_progress(user_id: int, language: str, conn) -> dict:
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT public.get_user_full_progress(%s, %s)", (user_id, language))
+                row = cur.fetchone()
+                
+                if row and row[0]:
+                    return row[0]
+                
+                return {}
+        except Exception as e:
+            print(f"[ExerciseDAO.get_user_progress] {e}")
+            return {}

@@ -34,3 +34,11 @@ class ClassroomService:
     @staticmethod
     def get_classroom_assignments(classroom_id):
         return ClassroomDAO.get_classroom_assignments(classroom_id)
+
+    @staticmethod
+    def get_student_progress(classroom_id):
+        return ClassroomDAO.get_student_progress_for_classroom(classroom_id)
+
+    @staticmethod
+    def complete_worksheet(student_id, worksheet_id, score, total):
+        return ClassroomDAO.save_worksheet_completion(student_id, worksheet_id, score, total)

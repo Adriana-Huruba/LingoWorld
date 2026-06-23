@@ -27,15 +27,24 @@ export class TeacherService {
     return this.http.post(`${this.apiUrl}/manuals/upload`, formData);
   }
 
+  deleteManual(manualId: number, teacherId: number): Observable<any> {
+    const params = new HttpParams().set('teacher_id', teacherId.toString());
+    return this.http.delete(`${this.apiUrl}/manuals/${manualId}`, { params });
+  }
+
   previewWorksheet(payload: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/worksheets/preview`, payload);
   }
 
-  regenerateItem(payload: any): Observable<any> {
+    regenerateItem(payload: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/worksheets/regenerate-item`, payload);
   }
 
   publishWorksheet(payload: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/worksheets/publish`, payload);
+  }
+
+  getWorksheetsByClassroom(classroomId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/worksheets/classroom/${classroomId}`);
   }
 }

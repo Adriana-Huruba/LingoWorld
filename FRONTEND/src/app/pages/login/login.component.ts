@@ -18,11 +18,15 @@ import { NzNotificationService } from 'ng-zorro-antd/notification';
 
 export class LoginComponent {
   loginForm =  new FormGroup({
-    email: new FormControl('', [Validators.required, Validators.email]), 
+    email: new FormControl('', [Validators.required, Validators.email]),
     password: new FormControl('', [Validators.required, Validators.minLength(6)])
   });
 
-  constructor(private authService: AuthService, private router: Router, private notification: NzNotificationService) {}
+  constructor(private authService: AuthService, private router: Router, private notification: NzNotificationService) {
+    if (this.authService.isLoggedIn()) {
+      this.router.navigate(['/homepage']);
+    }
+  }
 
   login() {
     if (this.loginForm.valid) 
@@ -34,18 +38,26 @@ export class LoginComponent {
           this.authService.setSession(response.user);
 
           console.log('Login successful:', response);
-          this.notification.success('Login Successful', 'You have been logged in.');
+          this.notification.success('Login successful', 'You have been logged in.', { 
+            nzDuration: 2000,        
+            nzPlacement: 'top',    
+            nzClass: 'custom-success-notification'
+          });
           
           if (response.user.role === 'teacher' || response.user.role === 'student') {
             this.router.navigate(['/homepage']);
           } else {
-            this.router.navigate(['/quiz']);
-            // this.router.navigate(['/homepage']);
+            // this.router.navigate(['/quiz']);
+            this.router.navigate(['/homepage']);
           }
         },
         error: (err) => {
           console.error('Login error:', err);
-          this.notification.error('Login failed', 'Invalid credentials');
+          this.notification.error('Login failed', 'Invalid credentials', {
+            nzDuration: 3000,
+            nzPlacement: 'top',
+            nzClass: 'custom-error-notification'
+          });
         }
       });
     } 

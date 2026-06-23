@@ -1,9 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { ExerciseService } from '../../core/services/exercise.service';
+import { UniversalPlayerComponent } from '../universal-player/universal-player.component';
+import { QuizMode } from '../../core/enums/quiz-mode.enum';
+import { NzIconModule } from 'ng-zorro-antd/icon';
 
 interface QuizExercise {
   exercise_id: number;
@@ -23,26 +26,21 @@ interface QuizResponse {
 
 @Component({
   selector: 'app-quiz',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UniversalPlayerComponent, NzIconModule],
   templateUrl: './quiz.component.html',
   styleUrl: './quiz.component.scss'
 })
 
 export class QuizComponent {
-  private authService= inject(AuthService);
-  private http = inject(HttpClient);
+  private authService = inject(AuthService);
+  private exerciseService = inject(ExerciseService);
   private router = inject(Router);
-  private apiUrl = 'http://localhost:8000/api';
-  private User=inject(AuthService);
 
   currentStep: 'agreement' | 'level' | 'loading' | 'quiz' | 'exercises' | 'result'= 'agreement';
   
   selectedLanguage: any = null;
   selectedLevel: any = null;
   exercises: QuizExercise[]  = [];
-  currentIndex = 0;
-  selectedOption: string = '';
-  textAnswer: string  = '';
   responses: QuizResponse[] = [];
 
   result: {
@@ -71,56 +69,28 @@ export class QuizComponent {
     { id: 'C2', description: 'Proficient' }
   ];
 
+  QuizMode = QuizMode;
+
   startQuiz() {
     this.currentStep = 'level';
   }
 
-  get currentExercise(): QuizExercise | null {
-    return this.exercises[this.currentIndex] ?? null;
-  }
- 
-  get currentQuestion() {
-    return this.currentExercise?.content.questions[0] ?? null;
-  }
- 
-  get isLastExercise(): boolean {
-    return this.currentIndex === this.exercises.length - 1;
-  }
- 
-  get progressPercent(): number {
-    if (!this.exercises.length) 
-      return 0;
-    return Math.round((this.currentIndex / this.exercises.length) * 100);
-  }
- 
-  get canSubmit(): boolean {
-    if (!this.currentExercise) 
-      return false;
-    if (this.currentExercise.type === 'multiple-choice') 
-      return !!this.selectedOption;
-    return this.textAnswer.trim().length > 0;
-  }
-
   loadExercises(): void {
     this.error = null;
-    const langCode = this.authService.normalizeLanguage(this.selectedLanguage.id);
- 
-    this.http.get<any>(`${this.apiUrl}/initial-quiz/${langCode}`
-    ).subscribe({
+    this.exerciseService.getInitialQuiz(this.selectedLanguage.id).subscribe({
       next: (res) => {
-        this.exercises  = res.exercises;
-        this.currentIndex = 0;
+        this.exercises = res.exercises;
         this.responses = [];
         this.currentStep = 'quiz';
       },
       error: (err) => {
         this.error = err.error?.detail ?? 'Could not load exercises.';
-        this.currentStep = 'level'; 
+        this.currentStep = 'level';
       },
     });
   }
 
-  selectLevel(level: any) {
+  selectLevel(level: any): void {
     if (!this.selectedLanguage) {
       alert('Please select a language first!');
       return;
@@ -130,50 +100,36 @@ export class QuizComponent {
     this.loadExercises();
   }
 
-  selectOption(option: string): void {
-    this.selectedOption = option;
-  }
- 
-  confirmAnswer(): void {
-    const question = this.currentQuestion;
-    const exercise = this.currentExercise;
-    if (!question || !exercise) 
-      return;
- 
-    const userAnswer = this.currentExercise!.type === 'multiple-choice'? this.selectedOption: this.textAnswer.trim();
-    const isCorrect = userAnswer.toLowerCase() === question.answer.toLowerCase();
 
-    this.responses.push({
-      exercise_id: exercise.exercise_id,
-      level: exercise.level,
-      is_correct: isCorrect,
-    });
- 
-    if (this.isLastExercise) 
-      this.submitResults();
-    else {
-      this.currentIndex++;
-      this.selectedOption = '';
-      this.textAnswer = '';
+  onQuizCompleted(event: {
+    score: number;
+    total: number;
+    responses?: Array<{ exercise_id: number; level: string; is_correct: boolean }>;
+  }): void {
+    if (event.responses?.length) {
+      this.responses = event.responses;
     }
+    this.submitResults();
   }
 
   submitResults(): void {
-    const userId = this.authService.currentUserId;
+    const userId = this.authService.currentUserId();
     this.currentStep = 'loading';
- 
-    const langCode = this.authService.normalizeLanguage(this.selectedLanguage.id);
+    const langCode = this.selectedLanguage.id; 
 
-    this.http.post<any>(`${this.apiUrl}/initial-quiz/submit`,
-      {
-        user_id: userId,
-        language: langCode,
-        responses: this.responses,
-      }
-    ).subscribe({
+    this.exerciseService.submitInitialQuiz({
+      user_id: userId,
+      language: langCode,
+      responses: this.responses,
+    }).subscribe({
       next: (res) => {
-        this.result  = res;
+        this.result = res;
         this.currentStep = 'result';
+     
+        if (res.estimated_level) 
+          this.authService.updateLevel(res.estimated_level);
+        if (res.starting_elo != null) 
+          this.authService.updateElo(res.starting_elo);
       },
       error: (err) => {
         this.error = err.error?.detail ?? 'Could not save results.';
@@ -184,9 +140,5 @@ export class QuizComponent {
 
   goToDashboard(): void {
     this.router.navigate(['/homepage']);
-  }
-
-  getOptionLabel(index: number): string {
-    return ['A', 'B', 'C', 'D'][index] ?? `${index + 1}`;
   }
 }

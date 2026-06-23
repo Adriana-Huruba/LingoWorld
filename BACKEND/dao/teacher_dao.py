@@ -3,10 +3,10 @@ from typing import Optional
 
 class TeacherDAO:
     @staticmethod
-    def insert_manual(teacher_id, filename, title, language, level, total_pages, total_chunks, chapters, conn) -> int:
+    def insert_manual(teacher_id, filename, title, language, level, total_pages, total_chunks, chapters, conn, file_hash=None) -> int:
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM insert_teacher_manual(%s, %s, %s, %s, %s, %s, %s, %s)",
-                (teacher_id, filename, title, language, level, total_pages, total_chunks, json.dumps(chapters))
+            cur.execute("SELECT * FROM insert_teacher_manual(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (teacher_id, filename, title, language, level, total_pages, total_chunks, json.dumps(chapters), file_hash)
             )
             return cur.fetchone()[0]
 
@@ -22,22 +22,47 @@ class TeacherDAO:
             row = cur.fetchone()
             if not row:
                 return None
-            return {
-                "manual_id": row[0], "title": row[1], "filename": row[2],
-                "language": row[3], "level": row[4], "total_pages": row[5],
-                "chapters": row[6], "is_processed": row[7],
-            }
+            columns = [desc[0] for desc in cur.description]
+            return dict(zip(columns, row))
+
+    @staticmethod
+    def delete_manual(manual_id, teacher_id, conn) -> bool:
+        with conn.cursor() as cur:
+            cur.execute("CALL delete_teacher_manual(%s, %s, NULL)", (manual_id, teacher_id))
+            row = cur.fetchone()
+            return bool(row[0]) if row else False
+
+    @staticmethod
+    def find_manual_by_filename(teacher_id, filename, conn) -> Optional[dict]:
+        with conn.cursor() as cur:
+            cur.execute("SELECT manual_id, title FROM find_manual_by_filename(%s, %s)", (teacher_id, filename))
+            row = cur.fetchone()
+            if not row:
+                return None
+            return {"manual_id": row[0], "title": row[1]}
+
+    @staticmethod
+    def find_manual_by_hash(teacher_id, file_hash, conn) -> Optional[dict]:
+        with conn.cursor() as cur:
+            cur.execute("SELECT manual_id, title FROM find_manual_by_hash(%s, %s)", (teacher_id, file_hash))
+            row = cur.fetchone()
+            if not row:
+                return None
+            return {"manual_id": row[0], "title": row[1]}
 
     @staticmethod
     def list_manuals_for_teacher(teacher_id, conn) -> list[dict]:
         with conn.cursor() as cur:
             cur.execute("SELECT * FROM public.list_teacher_manuals(%s)", (teacher_id,))
-            return [{
-                "manual_id": r[0], "title": r[1], "filename": r[2],
-                "language": r[3], "level": r[4], "total_pages": r[5],
-                "is_processed": r[6],
-                "uploaded_at": r[7].isoformat() if r[7] else None,
-            } for r in cur.fetchall()]
+            columns = [desc[0] for desc in cur.description]
+            rows = cur.fetchall()
+            result = []
+            for r in rows:
+                d = dict(zip(columns, r))
+                if "uploaded_at" in d and d["uploaded_at"]:
+                    d["uploaded_at"] = d["uploaded_at"].isoformat()
+                result.append(d)
+            return result
 
 
     @staticmethod
@@ -48,43 +73,40 @@ class TeacherDAO:
             )
             row = cur.fetchone()
             conn.commit()
-            return {
-                "worksheet_id": row[0],
-                "assignment_id": row[1],
-                "exercise_count": row[2],
-            }
+            columns = [desc[0] for desc in cur.description]
+            return dict(zip(columns, row))
 
     @staticmethod
     def list_worksheets_for_teacher(teacher_id, conn) -> list[dict]:
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM list_teacher_worksheets(%s)",(teacher_id,))
-            
-            return [{
-                "worksheet_id": r[0], "title": r[1],
-                "due_date": r[2].isoformat() if r[2] else None,
-                "created_at": r[3].isoformat() if r[3] else None,
-                "published_at": r[4].isoformat() if r[4] else None,
-                "manual_title": r[5], "classroom_name": r[6],
-                "exercise_count": r[7],
-            } for r in cur.fetchall()]
+            cur.execute("SELECT * FROM list_teacher_worksheets(%s)", (teacher_id,))
+            columns = [desc[0] for desc in cur.description]
+            rows = cur.fetchall()
+            result = []
+            for r in rows:
+                d = dict(zip(columns, r))
+                for date_col in ("due_date", "created_at", "published_at"):
+                    if date_col in d and d[date_col]:
+                        d[date_col] = d[date_col].isoformat()
+                result.append(d)
+            return result
 
     @staticmethod
     def get_worksheet_progress(worksheet_id, teacher_id, conn) -> Optional[dict]:
         with conn.cursor() as cur:
             try:
-                cur.execute("SELECT * FROM get_worksheet_progress(%s, %s)",(worksheet_id, teacher_id))
+                cur.execute("SELECT * FROM get_worksheet_progress(%s, %s)", (worksheet_id, teacher_id))
+                columns = [desc[0] for desc in cur.description]
                 rows = cur.fetchall()
-                return {
-                    "worksheet_id": worksheet_id,
-                    "students": [{
-                        "student_id": r[0], "student_name": r[1],
-                        "elo_score": r[2], "current_level": r[3],
-                        "total_exercises": r[4], "correct": r[5],
-                        "total_attempts": r[6],
-                        "accuracy": float(r[7]) if r[7] else 0,
-                        "avg_response_time": float(r[8]) if r[8] else None,
-                    } for r in rows]
-                }
+                students = []
+                for r in rows:
+                    d = dict(zip(columns, r))
+                    if "accuracy" in d and d["accuracy"] is not None:
+                        d["accuracy"] = float(d["accuracy"])
+                    if "avg_response_time" in d and d["avg_response_time"] is not None:
+                        d["avg_response_time"] = float(d["avg_response_time"])
+                    students.append(d)
+                return {"worksheet_id": worksheet_id, "students": students}
             except Exception as e:
                 if "not owned" in str(e).lower() or "not found" in str(e).lower():
                     return None

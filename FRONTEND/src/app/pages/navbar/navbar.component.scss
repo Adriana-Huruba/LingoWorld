@@ -43,6 +43,46 @@
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
+.user-stats {
+    display: flex;
+    align-items: center;
+    gap: 12px; 
+    margin-right: 16px; 
+    cursor: pointer;
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px; 
+    font-weight: 600;
+    font-size: 15px;
+    transition: all 0.2s ease-in-out; 
+}
+
+.stat:hover {
+    background-color: rgba(255, 255, 255, 0.8);
+    transform: translateY(-2px); 
+}
+
+.stat.xp {
+    color: #fabb73; 
+}
+
+.stat.elo {
+    // color: #2563eb; 
+    color: #2563eb; 
+    color: #3f77ac;
+}
+
+.stat svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor; 
+}
+
 .user-button, .language-option {
     background: transparent;
     border: none;

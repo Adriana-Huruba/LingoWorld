@@ -1,3 +1,9 @@
+"""
+Acest fisier contine date generate cu AI pentru testarea sistemului de recomandare"
+Copyright (c) 2026, Hurubă Adriana.
+Toate datele simulate sunt create doar in scop de testare a sistemului de recomandare al aplicatiei
+"""
+
 import argparse
 import json
 import os
@@ -38,6 +44,21 @@ def elo_expected_score(user_elo: int, item_elo: int) -> float:
 
 
 def calculate_new_elo(user_elo: int, item_elo: int, correct: bool, total_responses: int) -> int:
+    """
+    Calculates the user's new Elo rating after attempting an exercise.
+
+    Dynamically adjusts the K-factor: a higher value (32) for new users to quickly calibrate their level and a lower value (16) after 20 responses.
+
+    Args:
+        user_elo (float): the user's current Elo score
+        item_elo (float): the difficulty score of the exercise
+        correct (bool): True if the user's answer was correct, false otherwise
+        total_responses (int): total number of exercises completed by the user
+
+    Returns:
+        int: the updated Elo score, constrained within the [0, 1600] interval
+    """
+
     k = ELO_K_NEW if total_responses < 20 else ELO_K_STABLE
     expected = elo_expected_score(user_elo, item_elo)
     actual = 1.0 if correct else 0.0
@@ -57,6 +78,19 @@ def cefr_to_elo(level: str) -> int:
 
 
 def get_target_levels(user_elo: int) -> list:
+    """
+    Determines the appropriate target CEFR levels based on the Zone of Proximal Development (ZPD).
+
+    Calculates the user's relative position within their current CEFR rating band. If the user is in the top 20%, the next level is 
+    included for progression. If in the bottom 20%, the previous level is included for reinforcement.
+
+    Args:
+        user_elo (float): the user's current Elo rating
+
+    Returns:
+        list[str]: a list of recommended CEFR levels (['B1', 'B2'])
+    """
+
     current_level = elo_to_cefr(user_elo)
     index = CEFR_ORDER.index(current_level)
     low, high = CEFR_LEVELS[current_level]
@@ -88,6 +122,27 @@ def estimate_quality(is_correct: bool, used_hint: bool, response_time: float, ex
 
 
 def calculate_next_review_sm2(is_correct, used_hint, response_time, exercise_type, consecutive_correct, easiness_factor, last_interval):
+    """
+    Calculates the next spaced repetition scheduling parameters using the SM-2 algorithm.
+
+    Updates the easiness factor and the interval based on the quality of the response.
+    Args:
+        is_correct (bool): whether the user answered correctly
+        used_hint (bool): whether the user requested a hint
+        response_time (int): time taken to answer in seconds
+        exercise_type (str): the type of exercise to estimate expected time
+        consecutive_correct (int): current streak of correct answers for this item
+        easiness_factor (float): the previous easiness factor of the item
+        last_interval (int): the previous interval in days
+
+    Returns:
+        tuple: A 4-element tuple containing:
+            - next_review (datetime): the date for the next review
+            - new_ef (float): the updated easiness factor
+            - new_interval (int): the updated interval in days
+            - q (int):the estimated response quality (1-5)
+    """
+
     q = estimate_quality(is_correct, used_hint, response_time, exercise_type)
     if q < 3:
         new_interval = 1

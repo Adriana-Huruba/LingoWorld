@@ -2,56 +2,194 @@
     padding: 1rem;
 }
 
-.classroom-grid{
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 1.5rem;
+.actions-section {
+    display: flex; 
+    gap: 1rem; 
+    align-items: center; 
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
 }
 
-.classroom-card{
-    background-color: #f0f0f0;
-    padding: 1rem;
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
+.search-bar{
+    border-radius: 8px;
 
-.classroom-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    margin-bottom: 0.5rem;
-}
-
-.classroom-icon {
-    width: 40px;
-    height: 40px;
-    transition: transform 0.2s ease;
-}
-.add-class-btn{
-    background-color: #3f77ac;
-    border-color: #3f77ac;
-
-    height: 50px;             
-    padding: 0 30px;           
-    font-weight: bold;
-    border-radius: 8px; 
-    margin: 0.5rem;       
-  
-    &:hover {
-        background-color: #27ae60; 
-        transform: scale(1.05);
-        transition: 0.3s;
+    input{
+        height: 40px;
     }
 }
 
-.assignments-due
-{
+.enter-class-btn {
+    background-color: #3f77ac;
+    border-color: #3f77ac;
+    color: white;
+    height: 40px;            
+    padding: 0 20px;          
+    font-weight: 500;
+    border-radius: 6px; 
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    &:hover {
+        background-color: #2e5a84;
+        border-color: #2e5a84;
+        transform: scale(1.02);
+    }
+}
+
+.classes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.view-toggle {
+    display: flex;
+    gap: 12px;
+    font-size: 20px; 
+    color: #bfbfbf;  
+
+    nz-icon {
+        cursor: pointer;
+        transition: color 0.3s;
+
+        &:hover {
+            color: #595959;
+        }
+
+        &.active-view {
+            color: #3f77ac;
+        }
+    }
+}
+
+.classroom-item {
+    background-color: #f2f2f2;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    border: 1px solid transparent;
+
+    &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+        border-color: #3f77ac;
+        border-width: 1.5px;
+    }
+}
+
+.classroom-icon {
+    width: 48px;
+    height: 48px;
+}
+
+.classroom-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.classroom-teacher {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #555;
+    font-size: 0.9rem;
+}
+
+.classroom-icon-wrapper {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
+
+.grid-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+
+    .classroom-item {
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .classroom-details {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+
+.list-view {
     display: flex;
     flex-direction: column;
-    margin-top: 2rem;
-    border: gray;
-    width: 100%;
+    gap: 1rem;
+
+    .classroom-item {
+        padding: 1rem 1.5rem;
+        display: flex;
+        flex-direction: row; 
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    .classroom-icon-wrapper {
+        width: auto; 
+        margin-bottom: 0; 
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .classroom-icon {
+        width: 40px; 
+        height: 40px;
+    }
+
+    .classroom-details {
+        display: flex;
+        flex-direction: row; 
+        flex: 1; 
+        justify-content: space-between; 
+        align-items: center;
+    }
+}
+
+.assignments-section {
+    margin-top: 3rem;
+    border-top: 1px solid #e8e8e8;
+    padding-top: 1.5rem;
+}
+
+.section-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #262626;
+    margin-bottom: 1.5rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    background-color: #fafafa;
+    border: 1px dashed #d9d9d9;
+    border-radius: 8px;
+    color: #8c8c8c;
+    
+    nz-icon {
+        font-size: 32px;
+        color: #b7eb8f; 
+        margin-bottom: 10px;
+    }
+    
+    p {
+        margin: 0;
+        font-size: 1rem;
+    }
 }

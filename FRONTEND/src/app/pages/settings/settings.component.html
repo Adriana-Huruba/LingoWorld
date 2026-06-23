@@ -1,7 +1,37 @@
-<div class="user-settings"> 
-    <label>Name {{name()}}</label>
-    <label>Email</label>
-    <label>Target language {{targetLanguage()}}</label>
-    Change my password
-    <button> Delete account </button>
+<div class="settings-container">
+    <h2>Account settings</h2>
+    <p class="subtitle">Manage your personal information and security preferences</p>
+    <div class="settings-card">
+        <h3><nz-icon nzType="user" nzTheme="outline"></nz-icon> Profile</h3>
+
+        <div class="form-row">
+            <label>Name</label>
+            <input nz-input [(ngModel)]="userName" placeholder="Your name" />
+        </div>
+
+        <div class="form-row">
+            <label>Target Language</label>
+            <input nz-input [ngModel]="targetLanguage" disabled />
+        </div>
+
+        <div class="form-row">
+            <label>Level</label>
+            <input nz-input [ngModel]="userLevel" disabled />
+        </div>
+
+        <div class="form-row">
+            <label>Role</label>
+            <input nz-input [ngModel]="role" d />
+        </div>
+
+        <div class="actions">
+            <button nz-button nzType="primary" (click)="saveChanges()">Save changes</button>
+        </div>
+    </div>
+
+    <div class="settings-card danger-zone">
+        <button nz-button nzType="default" nzDanger nz-popconfirm nzPopconfirmTitle="Are you sure you want to logut?" (nzOnConfirm)="confirmLogout()">
+           Logout
+        </button>
+    </div>
 </div>

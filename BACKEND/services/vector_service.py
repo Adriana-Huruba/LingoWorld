@@ -23,7 +23,6 @@ def ensure_collection_exists():
             vectors_config=VectorParams(size=384, distance=Distance.COSINE),
         )
         
-        # index for faster filtering
         for field in ["language", "level", "skill_type", "topic", "source"]:
             client.create_payload_index(
                 collection_name=COLLECTION_NAME,
@@ -31,7 +30,6 @@ def ensure_collection_exists():
                 field_schema=PayloadSchemaType.KEYWORD,
             )
 
-        # index for faster sorting
         client.create_payload_index(
             collection_name=COLLECTION_NAME,
             field_name="chunk_index",

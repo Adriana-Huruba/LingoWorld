@@ -1,0 +1,48 @@
+<div class="teacher-dashboard-container">
+    <h2>Welcome, teacher {{teacher()?.name}}!</h2>
+    <p>Manage your classes and students effortlessly.</p>
+
+    <nz-input-group [nzSuffix]="suffixIconSearch" class="search-bar">
+        <input type="text" nz-input placeholder="Search for a class/student..." [(ngModel)]="searchText" (input)="filterText()" />
+    </nz-input-group>
+    <ng-template #suffixIconSearch>
+        <nz-icon nzType="search" nzTheme="outline" />
+    </ng-template>
+
+    <button nz-button nzType="primary" (click)="showModal()" class="add-class-btn">
+        <nz-icon nzType="plus" /> Add new class
+    </button>
+
+   <div class="classes-header">
+        <p>Your classes</p>
+        <div class="view-toggle">
+            <nz-icon nzType="appstore" nzTheme="outline" [class.active-view]="viewMode === 'grid'" (click)="viewMode = 'grid'" title="Grid View" />
+            <nz-icon nzType="bars" nzTheme="outline" [class.active-view]="viewMode === 'list'" (click)="viewMode = 'list'" title="List View" />
+        </div>
+    </div>
+    
+    <div class="base-container" [class.grid-view]="viewMode === 'grid'" [class.list-view]="viewMode === 'list'">
+        @for(classroom of classrooms; track classroom.id) 
+        {
+            <div class="classroom-item" (click)="navigateToClassroom(classroom.id)">
+                <div class="classroom-icon-wrapper">
+                    <img src="classroom.svg" alt="Classroom icon" class="classroom-icon">
+                </div>
+                
+                <div class="classroom-details">
+                    <h3 class="classroom-title">{{ classroom.name }}</h3>
+                    <div class="classroom-students">
+                        <nz-icon nzType="team" /> 
+                        <span>{{ classroom.student_count || 0 }} student(s)</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <nz-modal [(nzVisible)]="isModalVisible" nzTitle="Create new class" (nzOnCancel)="handleCancel()" (nzOnOk)="handleOk()">
+        <ng-container *nzModalContent>
+            <input nz-input placeholder="Class name (ex: English Grade 10B)" [(ngModel)]="newClassName" />
+        </ng-container>
+    </nz-modal>
+</div>
