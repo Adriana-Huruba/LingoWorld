@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
-import { tap } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 
 export interface ExerciseResponse {
   exercise_id: number;
@@ -32,7 +32,13 @@ export class ExerciseService {
     return this.http.post<any>(`${this.apiUrl}/generate-exercise`, data);
   }
   
-  getNextExercise(payload: { user_id: number; target_language: string; skill_type?: string; topic?: string; allow_generation?: boolean }) {
+  getDueExercises(userId: number, language: string): Observable<{ exercises: ExerciseResponse[] }> {
+    return this.http.get<{ exercises: ExerciseResponse[] }>(`${this.apiUrl}/due-exercises`, {
+      params: { user_id: String(userId), language }
+    });
+  }
+
+  getNextExercise(payload: { user_id: number; target_language: string; skill_type?: string; topic?: string; allow_generation?: boolean; spaced_repetition_only?: boolean }) {
     return this.http.post<ExerciseResponse>(`${this.apiUrl}/next-exercise`, payload);
   }
 

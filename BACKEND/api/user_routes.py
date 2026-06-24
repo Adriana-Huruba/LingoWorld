@@ -1,6 +1,7 @@
 import re
 
 from fastapi import APIRouter, HTTPException
+from typing import Optional
 from pydantic import BaseModel, EmailStr, field_validator
 from services.user_service import UserService
 from services.classroom_service import ClassroomService
@@ -139,9 +140,14 @@ async def get_classroom_students(classroom_id: int):
     students = ClassroomService.get_classroom_students(classroom_id)
     return {"students": students}
 
+@classroom_router.get('/student/{student_id}/pending-assignments')
+async def get_pending_assignments(student_id: int):
+    assignments = ClassroomService.get_pending_assignments_for_student(student_id)
+    return {"assignments": assignments}
+
 @classroom_router.get('/{classroom_id}/assignments')
-async def get_classroom_assignments(classroom_id: int):
-    assignments = ClassroomService.get_classroom_assignments(classroom_id)
+async def get_classroom_assignments(classroom_id: int, student_id: Optional[int] = None):
+    assignments = ClassroomService.get_classroom_assignments(classroom_id, student_id=student_id)
     return {"assignments": assignments}
 
 @classroom_router.get('/{classroom_id}/student-progress')

@@ -147,7 +147,7 @@ def _find_exercise_in_db(user_id, user_elo, target_levels, language, skill_type,
     return None 
 
 # rs
-def get_next_exercise(user_id: int, target_language: str, conn, skill_type: Optional[str] = None, topic: Optional[str] = None, allow_generation: bool = True):
+def get_next_exercise(user_id: int, target_language: str, conn, skill_type: Optional[str] = None, topic: Optional[str] = None, allow_generation: bool = True, spaced_repetition_only: bool = False):
     user = ExerciseDAO.get_user_for_rs(user_id, conn)
     if not user:
         print(f"[RS] user_id={user_id} does not exist in db or did not complete the quiz")
@@ -157,6 +157,10 @@ def get_next_exercise(user_id: int, target_language: str, conn, skill_type: Opti
     total_responses = user["total_responses"]
     target_levels = get_target_levels(user_elo)
     primary_level = elo_to_cefr(user_elo)
+
+    if spaced_repetition_only:
+        exercise = ExerciseRepository.find_spaced_repetition(user_id, user_elo, target_levels, target_language, skill_type, topic, conn)
+        return (exercise.to_dict() if hasattr(exercise, "to_dict") else exercise) if exercise else None
 
     exercise = _find_exercise_in_db(user_id, user_elo, target_levels, target_language, skill_type, topic, conn)
     if exercise:

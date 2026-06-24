@@ -44,11 +44,11 @@ def get_or_generate_exercise(user_id, topic, level, language, exercise_type: str
             topic=topic,
             conn=conn,
         )
-        if existing:
+        if existing and existing.type == exercise_type:
             existing.reason = "from_database"
             return existing
 
-    result = run_exercise_agent(user_id, topic, level, exercise_type, language, skill_type, native_language, conn)
+    result = run_exercise_agent(user_id, topic, level, exercise_type, language, skill_type, conn, native_language)
     if not result:
         return None
 

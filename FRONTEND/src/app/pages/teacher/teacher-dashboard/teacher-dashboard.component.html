@@ -3,7 +3,7 @@
     <p>Manage your classes and students effortlessly.</p>
 
     <nz-input-group [nzSuffix]="suffixIconSearch" class="search-bar">
-        <input type="text" nz-input placeholder="Search for a class/student..." [(ngModel)]="searchText" (input)="filterText()" />
+        <input type="text" nz-input placeholder="Search for a class..." [(ngModel)]="searchText" (input)="filterText()" />
     </nz-input-group>
     <ng-template #suffixIconSearch>
         <nz-icon nzType="search" nzTheme="outline" />

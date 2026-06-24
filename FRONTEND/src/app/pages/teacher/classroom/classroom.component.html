@@ -40,7 +40,7 @@
                 <p>Manage your students and view their progress.</p>
                 <h3>Your students: </h3>
                 <div class="students-list">
-                @for(student of students; track student.id) {
+                @for(student of sortedStudents; track student.id) {
                     <div class="student-card">
                         <img src="user-icon.svg" alt="Student Avatar" class="student-icon">
                         <div class="student-card-content">
@@ -169,8 +169,6 @@
                                 <nz-select [(ngModel)]="focus">
                                     <nz-option nzValue="grammar" nzLabel="Grammar & Structure"></nz-option>
                                     <nz-option nzValue="vocabulary" nzLabel="Vocabulary & Synonyms"></nz-option>
-                                    <nz-option nzValue="conjugation" nzLabel="Verb Conjugation"></nz-option>
-                                    <nz-option nzValue="reading" nzLabel="Reading Comprehension"></nz-option>
                                 </nz-select>
                             </div>
 
@@ -256,9 +254,6 @@
                                             @for (opt of item.content.options; track $index; let optIdx = $index) {
                                                 <div class="option-item" [class.is-correct]="item.content.options[optIdx] === item.correct_answer">
                                                     <input nz-input [(ngModel)]="item.content.options[optIdx]"/>
-                                                    <span class="correct-badge" *ngIf="item.content.options[optIdx] === item.correct_answer">
-                                                        <nz-icon nzType="check-circle" nzTheme="fill" /> Correct
-                                                    </span>
                                                 </div>
                                             }
                                         </div>

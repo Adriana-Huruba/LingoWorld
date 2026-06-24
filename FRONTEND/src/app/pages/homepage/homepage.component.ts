@@ -24,12 +24,13 @@ export class HomepageComponent implements OnInit {
   private exerciseService = inject(ExerciseService);
   private router = inject(Router);
 
-  topics: string[] = [];
+  topics: { id: string, name: string }[] = [];
 
   showPlayer = false;
   playerQuestions: PlayerQuestion[] = [];
   playerTitle = '';
   isLoadingExercises = false;
+  noDueExercises = false;
   QuizMode = QuizMode;
 
   private readonly SESSION_SIZE = 5;
@@ -47,19 +48,49 @@ export class HomepageComponent implements OnInit {
       next: (data) => {
         const seen = new Set<string>();
         this.topics = data
-          .map(t => t.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).trim())
-          .filter(t => { const k = t.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
+          .map(t => ({
+            id: t,
+            name: t.replace(/_/g, ' ').replace(/\s+/g, ' ').trim().replace(/\b\w/g, c => c.toUpperCase())
+          }))
+          .filter(t => {
+            const key = t.name.toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
       },
       error: (err) => { console.error('Error loading topics:', err); }
     });
   }
 
   startDailyReview() {
-    this.launchSession('Daily Review', undefined);
+    if (this.isLoadingExercises) 
+      return;
+    this.isLoadingExercises = true;
+    this.noDueExercises = false;
+
+    const userId = this.authService.userId;
+    const language = this.authService.targetLanguageFull;
+
+    this.exerciseService.getDueExercises(userId, language).subscribe({
+      next: (data) => {
+        if (!data.exercises.length) {
+          this.noDueExercises = true;
+          setTimeout(() => this.noDueExercises = false, 4000);
+          this.isLoadingExercises = false;
+          return;
+        }
+        this.playerQuestions = data.exercises as unknown as PlayerQuestion[];
+        this.playerTitle = 'Daily Review';
+        this.showPlayer = true;
+        this.isLoadingExercises = false;
+      },
+      error: () => { this.isLoadingExercises = false; }
+    });
   }
 
-  startTopicSession(topic: string) {
-    this.launchSession(topic, topic);
+  startTopicSession(topic: { id: string, name: string }) {
+    this.launchSession(topic.name, topic.id);
   }
 
   private launchSession(title: string, topic?: string) {
@@ -69,28 +100,36 @@ export class HomepageComponent implements OnInit {
     const userId = this.authService.userId;
     const language = this.authService.targetLanguageFull;
 
-    const dbRequests = Array(2).fill(null).map(() =>
-      this.exerciseService.getNextExercise({ user_id: userId, target_language: language, topic, allow_generation: false })
+    const isDailyReview = topic === undefined;
+    const dbRequests = Array(5).fill(null).map(() =>
+      this.exerciseService.getNextExercise({ user_id: userId, target_language: language, topic, allow_generation: false, spaced_repetition_only: isDailyReview })
         .pipe(catchError(() => of(null)))
     );
 
     forkJoin(dbRequests).subscribe({
       next: (results) => {
         const validDbEx = results.filter(Boolean) as unknown as PlayerQuestion[];
-        
-        if (validDbEx.length > 0) {
+        const uniqueDbEx = Array.from(new Map(validDbEx.map(item => [item.exercise_id, item])).values());
 
-          this.playerQuestions = validDbEx;
+        if (uniqueDbEx.length > 0) {
+          this.playerQuestions = uniqueDbEx;
           this.playerTitle = title;
           this.showPlayer = true;
           this.isLoadingExercises = false;
 
-  
-          this.fetchBackgroundExercises(userId, language, topic, 3, false);
-        } else {
-      
-          console.log('[Homepage] Empty bd. waiting for ai generation...');
+          const remaining = 5 - uniqueDbEx.length;
+          if (remaining > 0 && !isDailyReview) {
+            console.log(`[Homepage] Found ${uniqueDbEx.length} in DB. Generating ${remaining} in background...`);
+            this.fetchBackgroundExercises(userId, language, topic, remaining, false);
+          }
+        } else if (!isDailyReview) {
+          console.log('[Homepage] No ready exercises found. Waiting for AI generation...');
           this.fetchBackgroundExercises(userId, language, topic, 5, true);
+        } else {
+          console.log('[Homepage] No due exercises for daily review.');
+          this.noDueExercises = true;
+          this.isLoadingExercises = false;
+          setTimeout(() => this.noDueExercises = false, 4000);
         }
       },
       error: () => { this.isLoadingExercises = false; }

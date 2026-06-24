@@ -26,6 +26,7 @@ export class StudentDashboardComponent {
   student = this.authService.currentUser;
   allClassrooms: StudentClassroom[] = [];
   classrooms: StudentClassroom[] = [];
+  pendingAssignments: any[] = [];
 
   searchText = '';
   isModalVisible = false;
@@ -34,6 +35,20 @@ export class StudentDashboardComponent {
 
   ngOnInit(): void {
     this.loadClassrooms();
+    this.loadPendingAssignments();
+  }
+
+  loadPendingAssignments(): void {
+    const studentId = this.authService.userId;
+    this.classroomService.getPendingAssignmentsForStudent(studentId).subscribe({
+      next: (data) => { this.pendingAssignments = data.assignments; },
+      error: () => {}
+    });
+  }
+
+  navigateToAssignment(assignment: any): void {
+    // Navigate to classroom so student can start the assignment
+    this.router.navigate(['/class', assignment.classroom_id ?? assignment.id]);
   }
 
   enrollIn(): void {

@@ -50,8 +50,18 @@ export class ClassroomService {
     return this.http.get<{ classrooms: StudentClassroom[] }>(`${this.apiUrl}/student-classes/${studentId}`);
   }
 
-  getClassroomAssignments(classroomId: number): Observable<{ assignments: Worksheet[] }> {
-    return this.http.get<{ assignments: Worksheet[] }>(`${this.apiUrl}/${classroomId}/assignments`);
+  getClassroomAssignments(classroomId: number, studentId?: number): Observable<{ assignments: any[] }> {
+    let params: any = {};
+    
+    if (studentId !== undefined && studentId !== null) {
+      params = { student_id: studentId.toString() };
+    }
+
+    return this.http.get<{ assignments: any[] }>(`${this.apiUrl}/${classroomId}/assignments`, { params });
+  }
+
+  getPendingAssignmentsForStudent(studentId: number): Observable<{ assignments: any[] }> {
+    return this.http.get<{ assignments: any[] }>(`${this.apiUrl}/student/${studentId}/pending-assignments`);
   }
 
   getAssignmentById(assignmentId: number): Observable<Worksheet> {

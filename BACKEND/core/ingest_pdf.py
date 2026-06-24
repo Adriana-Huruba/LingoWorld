@@ -15,7 +15,7 @@ from pypdf import PdfReader
 from dotenv import load_dotenv
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from services.vector_service import store_embeddings_batch
-from core.embeddings import create_embedding, create_embeddings_batch
+from core.embeddings import create_embeddings_batch
 from qdrant_client.models import PointStruct
 from groq import Groq
 
@@ -97,7 +97,7 @@ def classify_chunks_batch(chunks, language, level) -> list:
 
     try:
         response = groq_client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.1,
             response_format={"type": "json_object"},

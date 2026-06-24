@@ -12,6 +12,7 @@ from services.exercise_service import get_or_generate_exercise, get_all_topics
 from services.initial_quiz_service import get_quiz_exercises, submit_quiz_results, has_completed_quiz
 from services.recommender_service import get_next_exercise, record_answer
 from services.agent_service import generate_hint
+from dao.exercise_dao import ExerciseDAO
 
 exercises_router = APIRouter()
 
@@ -30,6 +31,7 @@ class NextExerciseRequest(BaseModel):
     skill_type: Optional[str] = None
     topic: Optional[str] = None
     allow_generation: bool = True
+    spaced_repetition_only: bool = False
 
 class SubmitAnswerRequest(BaseModel):
     user_id: int
@@ -53,7 +55,7 @@ class InitialQuizSubmitRequest(BaseModel):
     responses: list[dict]
 
 @exercises_router.post("/generate-exercise")
-async def get_exercise(request: ExerciseRequest, conn=Depends(get_db), _=Depends(get_current_user)):  #TODO - sa caut si dupa continut
+async def get_exercise(request: ExerciseRequest, conn=Depends(get_db), _=Depends(get_current_user)):
     """
     1. Searching in postgreSQL for relevant exercises based on the topic, language and level.
     2. If not found, searching in qdrant for relevant chunks from the textbooks, then sending them to LLM to generate the exercise.
@@ -84,10 +86,34 @@ async def get_exercise(request: ExerciseRequest, conn=Depends(get_db), _=Depends
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
+@exercises_router.get("/due-exercises")
+async def get_due_exercises(user_id: int, language: str, conn=Depends(get_db), _=Depends(get_current_user)):
+    """Returns all exercises due for spaced repetition review today."""
+    try:
+        from services.recommender_service import get_target_levels, elo_to_cefr, CEFR_TO_ELO
+        user = ExerciseDAO.get_user_for_rs(user_id, conn)
+        if not user:
+            return {"exercises": []}
+        user_elo = user["elo_score"]
+        target_levels = get_target_levels(user_elo)
+        rows = ExerciseDAO.find_all_due(user_id, user_elo, target_levels, language, conn)
+        from entities.exercise import Exercise
+        exercises = []
+        for row in rows:
+            try:
+                ex = Exercise.from_row(row)
+                ex.reason = "spaced_repetition"
+                exercises.append(ex.to_dict())
+            except Exception:
+                continue
+        return {"exercises": exercises}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @exercises_router.post("/next-exercise")
 async def next_exercise(request: NextExerciseRequest, conn=Depends(get_db), _=Depends(get_current_user)):
     try:
-        exercise = get_next_exercise(user_id=request.user_id, target_language=request.target_language, conn=conn, skill_type=request.skill_type, topic=request.topic, allow_generation=request.allow_generation)
+        exercise = get_next_exercise(user_id=request.user_id, target_language=request.target_language, conn=conn, skill_type=request.skill_type, topic=request.topic, allow_generation=request.allow_generation, spaced_repetition_only=request.spaced_repetition_only)
         if not exercise:
             raise HTTPException(
                 status_code=404,
@@ -179,6 +205,14 @@ async def submit_initial_quiz(request: InitialQuizSubmitRequest, conn=Depends(ge
         raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@exercises_router.get("/initial-quiz/completed/{user_id}")
+async def check_initial_quiz_completed(user_id: int, conn=Depends(get_db)):
+    try:
+        completed = has_completed_quiz(user_id, conn)
+        return {"completed": completed, "user_id": user_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     

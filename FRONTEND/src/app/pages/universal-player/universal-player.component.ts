@@ -99,7 +99,6 @@ export class UniversalPlayerComponent implements OnInit, OnChanges {
       if (item.exercise_id && seen.has(item.exercise_id)) continue;
       if (item.exercise_id) seen.add(item.exercise_id);
 
-      // Already a fully-formed PlayerQuestion (teacher assignment path — has .type, no .content)
       if (item.type && !item.content) {
         result.push(item as PlayerQuestion);
         continue;
@@ -124,8 +123,21 @@ export class UniversalPlayerComponent implements OnInit, OnChanges {
         continue;
       }
 
+      if (rawType === 'multiple-choice') {
+        const firstQ = content.questions?.[0];
+        result.push({
+          exercise_id: exId,
+          type: 'multiple-choice',
+          exercise_title: content.exercise_title ?? '',
+          question: firstQ?.question ?? content.question ?? item.question ?? '',
+          options: firstQ?.options ?? content.options ?? item.options ?? [],
+          answer: item.correct_answer ?? firstQ?.answer ?? item.answer ?? '',
+          level: itemLevel,
+        });
+        continue;
+      }
+
       // translation / fill-in-the-blank
-      // _normalize_content may have moved question/base_sentence into content.questions[0]
       if (rawType === 'translation' || rawType === 'fill-in-the-blank' || rawType === 'fill_in_the_blank' || content.base_sentence) {
         const firstQ = content.questions?.[0];
         result.push({
@@ -141,22 +153,7 @@ export class UniversalPlayerComponent implements OnInit, OnChanges {
         continue;
       }
 
-      // multiple-choice with nested content.questions
-      if (content.questions?.length) {
-        const q = content.questions[0];
-        result.push({
-          exercise_id: exId,
-          type: 'multiple-choice',
-          exercise_title: content.exercise_title ?? '',
-          question: q.question ?? '',
-          options: q.options ?? [],
-          answer: item.correct_answer ?? q.answer ?? item.answer ?? '',
-          level: itemLevel,
-        });
-        continue;
-      }
-
-      // multiple-choice flat
+      // multiple-choice flat fallback (unknown rawType, no base_sentence)
       if (item.question !== undefined || content.question !== undefined) {
         result.push({
           exercise_id: exId,

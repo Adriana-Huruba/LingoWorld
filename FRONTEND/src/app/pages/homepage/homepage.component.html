@@ -6,6 +6,11 @@
         <app-student-dashboard></app-student-dashboard>
     }   
     @if(authService.userRole() === "adult_learner") {
+        @if(noDueExercises) {
+            <div class="toast-info">
+                All caught up! No exercises due for review today.
+            </div>
+        }
         @if(!showPlayer) {
             <div class="header">
                 <div class="header-text">
@@ -27,9 +32,9 @@
             <div class="topics-section">
                 <h2 class="section-title">Available topics</h2>
                 <div class="topics-grid">
-                    @for(topic of topics; track topic) {
+                    @for(topic of topics; track topic.id) {
                         <button class="topic-card" [disabled]="isLoadingExercises" (click)="startTopicSession(topic)">
-                            <span class="topic-name">{{ topic }}</span>
+                            <span class="topic-name">{{ topic.name }}</span>
                         </button>
                     }
                     @empty {

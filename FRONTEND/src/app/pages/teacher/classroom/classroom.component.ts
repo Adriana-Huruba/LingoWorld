@@ -45,8 +45,7 @@ export class ClassroomComponent implements OnInit {
   isDragging = false;
   isUploaded = false;
 
-  topics: string[] = [];  // multiple topics — joined before sending to backend
-  // numberOfExercises = 10;
+  topics: string[] = []; 
   focus = 'grammar';
   typesOfExercises: string[] = ['multiple-choice', 'translation']; 
   exerciseCounts: { [key: string]: number } = {
@@ -128,8 +127,20 @@ viewAssignment: any;
 
   loadStudents(classroomId: number) {
     this.classroomService.getClassroomStudents(classroomId).subscribe({
-      next: (data) => { this.students = data.students; },
+      next: (data) => {  this.students = data.students; },
       error: (err) => { console.error('Error loading classroom students', err); }
+    });
+  }
+
+  get sortedStudents(): any[] {
+    if (!this.students) 
+      return [];
+    
+    return [...this.students].sort((a, b) => {
+      const nameA = a.name || '';
+      const nameB = b.name || '';
+
+      return nameB.localeCompare(nameA);
     });
   }
 

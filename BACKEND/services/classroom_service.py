@@ -32,8 +32,12 @@ class ClassroomService:
         return ClassroomDAO.get_classrooms_by_student(student_id)
     
     @staticmethod
-    def get_classroom_assignments(classroom_id):
-        return ClassroomDAO.get_classroom_assignments(classroom_id)
+    def get_classroom_assignments(classroom_id, student_id=None):
+        return ClassroomDAO.get_classroom_assignments(classroom_id, student_id=student_id)
+
+    @staticmethod
+    def get_pending_assignments_for_student(student_id):
+        return ClassroomDAO.get_pending_assignments_for_student(student_id)
 
     @staticmethod
     def get_student_progress(classroom_id):

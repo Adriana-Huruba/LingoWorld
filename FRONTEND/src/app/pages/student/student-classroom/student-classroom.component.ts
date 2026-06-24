@@ -68,7 +68,8 @@ export class StudentClassroomComponent {
 
   
   loadAssignments(classroomId: number) {
-    this.classroomService.getClassroomAssignments(classroomId).subscribe({
+    const studentId = this.authService.userId ?? undefined;
+    this.classroomService.getClassroomAssignments(classroomId, studentId).subscribe({
       next: (data) => { this.assignments = data.assignments; },
       error: () => { this.errorMessage = 'Could not load assignments.'; }
     });

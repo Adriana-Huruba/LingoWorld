@@ -5,9 +5,6 @@
         This quiz helps us understand your current level so we can recommend the best learning path for you.
         You will answer a few exercises across different difficulty levels.
       </h3>
-      <h3>
-          You can always change your language and level preferences later in your profile settings.
-      </h3>
       <div class="agreement-actions">
         <label class="checkbox-label">
           <input type="checkbox" />
@@ -16,40 +13,39 @@
         <button class="btn-primary" (click)="startQuiz()">Start Quiz</button>
       </div>
     }
-    @if (currentStep === 'level') 
-    {
-      <h2>Select the language you want to learn:</h2>
-      <div class="options-grid" style="margin-bottom: 20px;">
-        @for(lang of languages; track lang.id) {
-          <button class="option-btn" (click)="selectedLanguage = lang" [class.selected]="selectedLanguage?.id === lang.id">
-            {{ lang.flag }} {{ lang.name }}
-          </button>
-        }
-      </div>
 
-      <h2>What is your estimated level?</h2>
-      <div class="options-grid">
-        @for(level of levels; track level.id) {
-          <button (click)="selectLevel(level)">
-            <strong>{{ level.description }}</strong> ({{ level.id }})
-          </button>
-        }
-      </div>
-    }
-      
     @if(currentStep === 'loading') 
     {
       <div class="loader"></div>
-      <p>We are preparing exercises for {{ selectedLanguage.name }} at level {{ selectedLevel.id }}...</p>
+      <p>Please wait... We are preparing your exercises</p>
     }
 
     @if (currentStep === 'quiz') {
-      <app-universal-player
-        [preloadedExercises]="exercises"
-        [title]="'Initial Level Quiz'"
-        [mode]="QuizMode.INITIAL_QUIZ"
-        (completed)="onQuizCompleted($event)">
-      </app-universal-player>
+      <div [style.display]="isQuizPaused ? 'none' : 'block'">
+        <app-universal-player
+          [preloadedExercises]="exercises"
+          [title]="'Initial Level Quiz'"
+          [mode]="QuizMode.INITIAL_QUIZ"
+          (completed)="onQuizCompleted($event)"
+          (closed)="onQuizClosed()">
+        </app-universal-player>
+      </div>
+
+      @if (isQuizPaused) {
+        <div class="pause-screen step-result">
+          <h2>Quiz Paused</h2>
+          <p class="result-note">
+            You must complete the initial quiz to establish your starting level and unlock the personalized dashboard.
+          </p>
+          
+          <div class="btn-resume">
+            <button class="btn-primary" (click)="resumeQuiz()">
+              <nz-icon nzType="play-circle" nzTheme="outline"/>
+              Resume quiz
+            </button>
+          </div>
+        </div>
+      }
     }
  
     @if (currentStep === 'result' && result) 

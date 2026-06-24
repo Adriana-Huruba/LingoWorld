@@ -47,8 +47,8 @@ export class LoginComponent {
           if (response.user.role === 'teacher' || response.user.role === 'student') {
             this.router.navigate(['/homepage']);
           } else {
-            // this.router.navigate(['/quiz']);
-            this.router.navigate(['/homepage']);
+            this.router.navigate(['/quiz']);
+            // this.router.navigate(['/homepage']);
           }
         },
         error: (err) => {

@@ -2,6 +2,7 @@ import json
 import os
 import re
 import random
+import contextvars
 from typing import Optional, TypedDict
 from spylls.hunspell import Dictionary
 from langgraph.graph import StateGraph, END
@@ -9,6 +10,7 @@ from langgraph.graph.state import CompiledStateGraph
 
 from google import genai
 from google.genai import types as genai_types
+from groq import Groq
 from dotenv import load_dotenv
 
 from core.embeddings import create_embedding
@@ -18,6 +20,11 @@ from dao.exercise_dao import ExerciseDAO
 
 load_dotenv()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+# ContextVar works correctly in both asyncio and multi-threaded contexts
+# (threading.local fails when LangGraph runs nodes in internal threads)
+_conn_var: contextvars.ContextVar = contextvars.ContextVar("db_conn", default=None)
 
 
 DICT_PATH = os.path.join(os.path.dirname(__file__), "../data/dicts")
@@ -51,7 +58,8 @@ class ExerciseAgentState(TypedDict):
     language: str
     native_language: str
     skill_type: Optional[str]
-    conn: object
+    # conn is NOT stored in state — psycopg2 connections can't survive LangGraph's
+    # internal deepcopy. Access via _conn_local.conn instead.
     context_chunks: list
     raw_json: str
     exercise: dict
@@ -289,11 +297,29 @@ def generate_node(state: ExerciseAgentState) -> ExerciseAgentState:
         )
         raw_text = response.text
         if not raw_text:
-            return {**state, "raw_json": "", "validation_errors": ["Gemini returned empty response (possible safety block)"]}
+            raise ValueError("Gemini returned empty response (possible safety block)")
         return {**state, "raw_json": raw_text.strip()}
     except Exception as e:
-        print(f"[Agent][generate] Gemini API error: {e}")
-        return {**state, "raw_json": "", "validation_errors": [f"Gemini API error: {e}"]}
+        print(f"[Agent][generate] Gemini API error: {e}. Falling back to Groq...")
+
+    try:
+        groq_response = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.3,
+            response_format={"type": "json_object"},
+        )
+        raw_text = groq_response.choices[0].message.content
+        if not raw_text:
+            return {**state, "raw_json": "", "validation_errors": ["Both Gemini and Groq returned empty responses"]}
+        print("[Agent][generate] Groq fallback succeeed")
+        return {**state, "raw_json": raw_text.strip()}
+    except Exception as e2:
+        print(f"[Agent][generate] Groq fallback error: {e2}")
+        return {**state, "raw_json": "", "validation_errors": [f"Both LLMs failed. Last error: {e2}"]}
 
 
 def validate_node(state: ExerciseAgentState) -> ExerciseAgentState:
@@ -371,7 +397,8 @@ def _validate_standard(state: ExerciseAgentState, exercise: dict) -> ExerciseAge
 def save_node(state: ExerciseAgentState) -> ExerciseAgentState:
     exercise = state["exercise"]
     chunks = state["context_chunks"]
-    conn = state["conn"]
+    conn = _conn_var.get()
+    print(f"[save_node] conn type={type(conn).__name__}, has_cursor={hasattr(conn, 'cursor')}")
     chunk_payload = chunks[0].payload
     
     specific_level = chunk_payload.get("chunk_level", state["level"])
@@ -480,6 +507,10 @@ def run_exercise_agent(user_id: int, topic: str, level: str, exercise_type: str,
         or None if generation fails.
     """
 
+    # Store conn in ContextVar — survives across asyncio tasks and LangGraph internal threads
+    _conn_var.set(conn)
+    print(f"[run_exercise_agent] conn set: type={type(conn).__name__}, has_cursor={hasattr(conn, 'cursor')}")
+
     initial_state: ExerciseAgentState = {
         "user_id": user_id,
         "topic": topic,
@@ -488,7 +519,6 @@ def run_exercise_agent(user_id: int, topic: str, level: str, exercise_type: str,
         "language": language,
         "native_language": native_language,
         "skill_type": skill_type,
-        "conn": conn,
         "context_chunks": [],
         "raw_json": "",
         "exercise": {},
@@ -556,11 +586,30 @@ def generate_hint(exercise_type: str, question: str, options: list, level: str, 
             Write in {native_language}.
         """
 
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt,
-        config=genai_types.GenerateContentConfig(
-            system_instruction="You are a helpful language teacher.",
+    system = "You are a helpful language teacher."
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=genai_types.GenerateContentConfig(system_instruction=system),
         )
-    )
-    return response.text.strip()
+        text = response.text
+        if text:
+            return text.strip()
+        raise ValueError("Gemini returned empty hint response")
+    except Exception as e:
+        print(f"[generate_hint] Gemini error: {e}. Falling back to Groq...")
+
+    try:
+        groq_response = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.3,
+        )
+        return groq_response.choices[0].message.content.strip()
+    except Exception as e2:
+        print(f"[generate_hint] Groq fallback error: {e2}")
+        return "Nu am putut genera un hint momentan. Încearcă din nou."

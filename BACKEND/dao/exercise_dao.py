@@ -2,10 +2,11 @@ import json
 from typing import Optional
 
 class ExerciseDAO:
-    # TODO
-    #verif content-daca e doar un ex/lista
     @staticmethod
     def insert_exercise(language, level, exercise_type, category, topic, content, correct_answer, elo_difficulty, source_manual, conn) -> Optional[int]:
+        if not hasattr(conn, "cursor"):
+            print(f"[ExerciseDAO.insert_exercise] Invalid conn object: {type(conn)}. Cannot insert.")
+            return None
         try:
             with conn.cursor() as cur:
                 cur.execute("CALL insert_exercise(%s,%s,%s,%s,%s,%s::jsonb,%s,%s,%s,NULL)", (
@@ -13,9 +14,9 @@ class ExerciseDAO:
                 ))
                 conn.commit()
                 row = cur.fetchone()
-                
-                return row[0] if row else None 
-                
+
+                return row[0] if row else None
+
         except Exception as e:
             conn.rollback()
             print(f"[ExerciseDAO.insert_exercise] {e}")
@@ -60,6 +61,19 @@ class ExerciseDAO:
         except Exception as e:
             print(f"[ExerciseDAO.find_spaced_repetition] {e}")
             return None
+
+    @staticmethod
+    def find_all_due(user_id, levels, language, conn, limit: int = 10) -> list[dict]:
+        """Returns all exercises due for spaced repetition review (next_review_at <= now)"""
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT * FROM public.get_due_exercises(%s, %s, %s::text[], %s)", (user_id, language.lower(), levels, limit))
+                
+                columns = [desc[0] for desc in cur.description]
+                return [dict(zip(columns, row)) for row in cur.fetchall()]
+        except Exception as e:
+            print(f"[ExerciseDAO.find_all_due] {e}")
+            return []
 
     @staticmethod
     def find_new(user_id, user_elo, levels, language, skill_type, topic, conn) -> Optional[dict]:
@@ -198,7 +212,7 @@ class ExerciseDAO:
 
                 where = " AND ".join(conditions)
                 cur.execute(
-                    f"SELECT DISTINCT LOWER(TRIM(topic)) FROM exercises WHERE {where} ORDER BY 1",
+                    f"SELECT DISTINCT TRIM(REGEXP_REPLACE(LOWER(TRIM(topic)), '\\s+', ' ', 'g')) FROM exercises WHERE {where} ORDER BY 1",
                     params,
                 )
                 rows = cur.fetchall()

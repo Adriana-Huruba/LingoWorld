@@ -120,7 +120,6 @@ class ClassroomDAO:
         try:
             cur.execute("SELECT * FROM get_classrooms_by_student(%s)", (student_id,))
             classrooms = cur.fetchall()
-            
             return [ { "id": c[0], "name": c[1], "invite_code": c[2], "teacher_name": c[3] } for c in classrooms]
         except Exception as e:
             print(f"DAO classroom student error: {e}")
@@ -130,10 +129,41 @@ class ClassroomDAO:
             conn.close()
 
     @staticmethod
-    def get_classroom_assignments(classroom_id):
+    def get_pending_assignments_for_student(student_id):
+        conn = get_db_connection()
+        try:
+            classrooms = ClassroomDAO.get_classrooms_by_student(student_id)
+
+            pending = []
+            for classroom in classrooms:
+                assignments = ClassroomDAO.get_classroom_assignments(classroom["id"], student_id=student_id)
+                for a in assignments:
+                    if a["status"] != "completed":
+                        a["classroom_name"] = classroom["name"]
+                        pending.append(a)
+            return pending
+        except Exception as e:
+            print(f"DAO get_pending_assignments_for_student error: {e}")
+            return []
+        finally:
+            conn.close()
+
+    @staticmethod
+    def _get_completed_worksheet_ids(student_id: int, conn) -> set:
+        try:
+            with conn.cursor() as cur:
+                cur.execute( "SELECT worksheet_id FROM worksheet_completions WHERE student_id = %s", (student_id,))
+                return {row[0] for row in cur.fetchall()}
+        except Exception:
+            return set()
+
+    @staticmethod
+    def get_classroom_assignments(classroom_id, student_id=None):
         conn = get_db_connection()
         cur = conn.cursor()
         try:
+            completed_ids = ClassroomDAO._get_completed_worksheet_ids(student_id, conn) if student_id else set()
+
             cur.execute("SELECT * FROM  get_classroom_assignments_data(%s)", (classroom_id,))
             rows = cur.fetchall()
 
@@ -141,11 +171,13 @@ class ClassroomDAO:
             for row in rows:
                 worksheet_id = row[0]
                 if worksheet_id not in worksheets:
+                    status = "completed" if worksheet_id in completed_ids else "pending"
                     worksheets[worksheet_id] = {
                         "id": worksheet_id,
                         "title": row[1],
                         "due_date": row[2].isoformat() if row[2] else None,
-                        "status": "pending",
+                        "status": status,
+                        "classroom_id": classroom_id,
                         "questions": []
                     }
 

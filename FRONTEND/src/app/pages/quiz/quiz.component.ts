@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -31,15 +31,14 @@ interface QuizResponse {
   styleUrl: './quiz.component.scss'
 })
 
-export class QuizComponent {
+export class QuizComponent implements OnInit{
   private authService = inject(AuthService);
   private exerciseService = inject(ExerciseService);
   private router = inject(Router);
 
-  currentStep: 'agreement' | 'level' | 'loading' | 'quiz' | 'exercises' | 'result'= 'agreement';
+  currentStep: 'agreement' | 'level' | 'loading' | 'quiz' | 'exercises' | 'result'= 'loading';
+  isQuizPaused: boolean = false;
   
-  selectedLanguage: any = null;
-  selectedLevel: any = null;
   exercises: QuizExercise[]  = [];
   responses: QuizResponse[] = [];
 
@@ -52,32 +51,36 @@ export class QuizComponent {
   } | null = null;
  
   error: string | null = null;
-
-  languages = [
-    { id: 'english', name: 'English', flag: '🇬🇧' },
-    { id: 'romanian', name: 'Română', flag: '🇷🇴' },
-    { id: 'french', name: 'Francais', flag: '🇫🇷' },
-    { id: 'spanish', name: 'Español', flag: '🇪🇸' }
-  ];
-
-  levels = [
-    { id: 'A1', description: 'Beginner' },
-    { id: 'A2', description: 'Elementary' },
-    { id: 'B1', description: 'Intermediate' },
-    { id: 'B2', description: 'Upper Intermediate' },
-    { id: 'C1', description: 'Advanced' },
-    { id: 'C2', description: 'Proficient' }
-  ];
-
   QuizMode = QuizMode;
 
+  ngOnInit(): void {
+    const userId = this.authService.currentUserId(); 
+    
+    this.exerciseService.hasCompletedQuiz(userId).subscribe({
+      next: (res) => {
+        if (res.completed) { 
+          this.goToDashboard();
+        } else {
+          this.currentStep = 'agreement';
+        }
+      },
+      error: (err) => {
+        console.error('Eroror at checking if the quiz was completed:', err);
+        this.currentStep = 'agreement'; 
+      }
+    });
+  }
+
   startQuiz() {
-    this.currentStep = 'level';
+    this.currentStep = 'loading';
+    this.loadExercises();
   }
 
   loadExercises(): void {
     this.error = null;
-    this.exerciseService.getInitialQuiz(this.selectedLanguage.id).subscribe({
+    const targetLang = this.authService.targetLanguageFull.toLowerCase(); 
+
+    this.exerciseService.getInitialQuiz(targetLang).subscribe({
       next: (res) => {
         this.exercises = res.exercises;
         this.responses = [];
@@ -85,21 +88,10 @@ export class QuizComponent {
       },
       error: (err) => {
         this.error = err.error?.detail ?? 'Could not load exercises.';
-        this.currentStep = 'level';
+        this.currentStep = 'agreement';
       },
     });
   }
-
-  selectLevel(level: any): void {
-    if (!this.selectedLanguage) {
-      alert('Please select a language first!');
-      return;
-    }
-    this.selectedLevel = level;
-    this.currentStep = 'loading';
-    this.loadExercises();
-  }
-
 
   onQuizCompleted(event: {
     score: number;
@@ -115,11 +107,12 @@ export class QuizComponent {
   submitResults(): void {
     const userId = this.authService.currentUserId();
     this.currentStep = 'loading';
-    const langCode = this.selectedLanguage.id; 
+    
+    const targetLang = this.authService.targetLanguageFull.toLowerCase();
 
     this.exerciseService.submitInitialQuiz({
       user_id: userId,
-      language: langCode,
+      language: targetLang,
       responses: this.responses,
     }).subscribe({
       next: (res) => {
@@ -136,6 +129,14 @@ export class QuizComponent {
         this.currentStep = 'quiz';
       },
     });
+  }
+
+  onQuizClosed(): void {
+    this.isQuizPaused = true;
+  }
+
+  resumeQuiz(): void {
+    this.isQuizPaused = false;
   }
 
   goToDashboard(): void {

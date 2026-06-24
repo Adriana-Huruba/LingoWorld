@@ -44,11 +44,28 @@
 
     <div class="assignments-section">
         <h3 class="section-title">Assignments due</h3>
-        
-        <div class="empty-state">
-            <nz-icon nzType="check-circle" nzTheme="outline" />
-            <p>You have no pending assignments</p>
-        </div>
+
+        @if (pendingAssignments.length === 0) {
+            <div class="empty-state">
+                <nz-icon nzType="check-circle" nzTheme="outline" />
+                <p>You have no pending assignments</p>
+            </div>
+        } @else {
+            @for (a of pendingAssignments; track a.id) {
+                <div class="assignment-row" (click)="navigateToClassroom(a.classroom_id)">
+                    <div class="assignment-row-info">
+                        <span class="assignment-row-title">{{ a.title }}</span>
+                        <span class="assignment-row-class">{{ a.classroom_name }}</span>
+                    </div>
+                    <div class="assignment-row-right">
+                        @if (a.due_date) {
+                            <span class="assignment-row-due">Due: {{ a.due_date | date:'dd MMM' }}</span>
+                        }
+                        <nz-icon nzType="right" nzTheme="outline" />
+                    </div>
+                </div>
+            }
+        }
     </div>
 
     <nz-modal [(nzVisible)]="isModalVisible" nzTitle="Enroll in a new class" (nzOnCancel)="handleCancel()" (nzOnOk)="handleOk()">

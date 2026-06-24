@@ -26,9 +26,7 @@ export class GeneratorComponent implements OnInit {
   readonly skillTypes = [
     { value: '', label: 'Any' },
     { value: 'grammar', label: 'Grammar' },
-    { value: 'vocabulary', label: 'Vocabulary' },
-    { value: 'reading', label: 'Reading' },
-    { value: 'writing', label: 'Writing' },
+    { value: 'vocabulary', label: 'Vocabulary' }
   ];
 
   readonly countOptions = [3, 5, 10];
@@ -47,7 +45,7 @@ export class GeneratorComponent implements OnInit {
       next: (data) => {
         const seen = new Set<string>();
         this.topics = data
-          .map(t => t.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).trim())
+          .map(t => t.replace(/_/g, ' ').replace(/\s+/g, ' ').trim().replace(/\b\w/g, c => c.toUpperCase()))
           .filter(t => { const k = t.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
       }
     });
